@@ -177,6 +177,7 @@ body{
   font-weight:700;
 }
 .cal-day.sel .slot-badge{background:var(--accent);color:var(--primary);}
+.cal-num{display:block;line-height:1;}
 
 /* 時間枠 */
 .slots-area{margin-top:20px;padding-top:18px;border-top:1px solid var(--border);}
@@ -674,10 +675,58 @@ tbody td{padding:11px 13px;vertical-align:middle;}
       <textarea id="m-body" rows="11" style="font-size:13px;line-height:1.75;"></textarea>
     </div>
     <div class="modal-act">
-      <button class="btn btn-outline" onclick="closeModal()">閉じる</button>
+      <button class="btn btn-outline" onclick="closeModal('m-email')">閉じる</button>
       <button class="btn btn-primary" onclick="openOutlook()">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         Outlookで開く
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 予約変更モーダル -->
+<div class="modal-ov" id="m-edit">
+  <div class="modal">
+    <div class="modal-title">予約の変更</div>
+    <div id="edit-alert"></div>
+    <input type="hidden" id="edit-idx">
+    <div style="background:var(--gray);border-radius:var(--radius-sm);padding:12px;font-size:13px;margin-bottom:16px;" id="edit-summary"></div>
+    <div class="form-group">
+      <label>新しい予約日</label>
+      <input type="date" id="edit-date">
+    </div>
+    <div class="form-group">
+      <label>新しい時間枠</label>
+      <select id="edit-slot">
+        <option value="">日付を選択すると枠が表示されます</option>
+      </select>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">※変更後は元の枠の予約数が自動的に減算されます</p>
+    <div class="modal-act">
+      <button class="btn btn-outline" onclick="closeModal('m-edit')">キャンセル</button>
+      <button class="btn btn-primary" onclick="doEdit()">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg>
+        変更を確定
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal-ov" id="m-delete">
+  <div class="modal">
+    <div class="modal-title">予約の削除</div>
+    <input type="hidden" id="del-idx">
+    <div style="background:var(--danger-bg);border:1px solid #fca5a5;border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">
+      <p style="font-weight:700;color:var(--danger);margin-bottom:8px;">以下の予約を削除しますか？</p>
+      <div id="del-summary" style="font-size:14px;line-height:1.9;"></div>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);">削除すると元に戻せません。キャンセル連絡を受けた場合など、慎重に操作してください。</p>
+    <div class="modal-act">
+      <button class="btn btn-outline" onclick="closeModal('m-delete')">キャンセル</button>
+      <button class="btn btn-danger" onclick="doDelete()">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        削除する
       </button>
     </div>
   </div>
@@ -696,13 +745,13 @@ import { getDatabase, ref, get, set, push, update, onValue, runTransaction } fro
 //  ★ Firebaseコンソールで取得した設定値をここに貼り付けてください
 // ============================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyA98JWMfhaGLWJt777YKiyWkZqMtRjEaf4",
-  authDomain: "reservation-907e2.firebaseapp.com",
-  databaseURL: "https://reservation-907e2-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "reservation-907e2",
-  storageBucket: "reservation-907e2.firebasestorage.app",
-  messagingSenderId: "908815238794",
-  appId: "1:908815238794:web:949be83a9dcfca1e740f73"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  databaseURL:       "YOUR_DATABASE_URL",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -852,8 +901,15 @@ async function renderCal() {
   const first = new Date(calY, calM, 1).getDay();
   const days  = new Date(calY, calM+1, 0).getDate();
   const today = new Date(); today.setHours(0,0,0,0);
-  const ps    = settings.periodStart ? new Date(settings.periodStart) : null;
-  const pe    = settings.periodEnd   ? new Date(settings.periodEnd + 'T23:59:59') : null;
+  // タイムゾーンバグ防止: 'YYYY-MM-DD' を new Date() に直接渡すとUTC解釈になるため
+  // ローカル時刻として解析する
+  function parseLocalDate(str) {
+    if (!str) return null;
+    const [y,m,d] = str.split('-').map(Number);
+    return new Date(y, m-1, d);
+  }
+  const ps = parseLocalDate(settings.periodStart);
+  const pe = parseLocalDate(settings.periodEnd);
 
   const booked = await getMonthBooked(calY, calM);
 
@@ -874,10 +930,10 @@ async function renderCal() {
     if (isToday) cls += ' today';
     if (past || !inRng || !avail.length) {
       cls += ' disabled';
-      html += `<div class="${cls}">${d}</div>`;
+      html += `<div class="${cls}" data-date="${dstr}"><span class="cal-num">${d}</span></div>`;
     } else {
       cls += isSel ? ' sel' : ' avail';
-      html += `<div class="${cls}" onclick="pickDate('${dstr}')">${d}<span class="slot-badge">${avail.length}</span></div>`;
+      html += `<div class="${cls}" data-date="${dstr}" onclick="pickDate('${dstr}')"><span class="cal-num">${d}</span><span class="slot-badge">${avail.length}</span></div>`;
     }
   }
   grid.innerHTML = html;
@@ -900,10 +956,11 @@ async function getMonthBooked(y, m) {
 }
 
 function getSlotsFor(dstr) {
-  const dow = new Date(dstr).getDay();
+  const [sy,sm,sd] = dstr.split("-").map(Number);
+  const dow = new Date(sy, sm-1, sd).getDay();
   return slotCfgs.filter(s => {
-    if (s.type === 'specific') return s.date === dstr;
-    if (s.type === 'weekly')   return (s.days || []).includes(dow);
+    if (s.type === "specific") return s.date === dstr;
+    if (s.type === "weekly")   return (s.days || []).includes(dow);
     return false;
   });
 }
@@ -918,15 +975,19 @@ window.chMonth = function(dir) {
 window.pickDate = async function(dstr) {
   selDate = dstr; selSlotId = null;
   document.getElementById('btn-toconf').disabled = true;
-  document.querySelectorAll('.cal-day').forEach(el => {
-    const d = el.getAttribute('onclick');
-    if (!d) return;
-    const m = d.match(/'([^']+)'/);
-    if (!m) return;
-    el.classList.remove('sel');
-    if (m[1] === dstr) {
+  // data-date属性で確実に照合し、クラスのみ切り替え（innerHTMLは変更しない）
+  document.querySelectorAll('.cal-day[data-date]').forEach(el => {
+    const ed = el.dataset.date;
+    if (!ed) return;
+    if (ed === dstr) {
       el.classList.remove('avail');
       el.classList.add('sel');
+    } else {
+      // 選択解除：aviailに戻す（disabledはそのまま）
+      if (el.classList.contains('sel')) {
+        el.classList.remove('sel');
+        el.classList.add('avail');
+      }
     }
   });
   await renderSlots(dstr);
@@ -1202,10 +1263,18 @@ function renderRsvTable() {
       <td>${r.pos}</td>
       <td><div>${r.mail}</div><div style="color:var(--text-muted)">${r.tel}</div></td>
       <td>${r.st}～${r.et}</td>
-      <td>
-        <button class="btn btn-outline btn-sm" onclick="openMailModal(${i})">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          メール作成
+      <td style="white-space:nowrap;">
+        <button class="btn btn-outline btn-sm" style="margin-bottom:4px;" onclick="openMailModal(${i})">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          メール
+        </button><br>
+        <button class="btn btn-outline btn-sm" style="margin-bottom:4px;" onclick="openEditModal(${i})">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          変更
+        </button><br>
+        <button class="btn btn-sm" style="background:var(--danger-bg);color:var(--danger);border:1px solid #fca5a5;" onclick="confirmDelete(${i})">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          削除
         </button>
       </td>
     </tr>
@@ -1277,12 +1346,111 @@ ${r.pos}　${r.nm} 様
 どうぞよろしくお願いいたします。`;
   document.getElementById('m-email').classList.add('open');
 };
-window.closeModal  = function(){ document.getElementById('m-email').classList.remove('open'); };
+window.closeModal  = function(id){ document.getElementById(id).classList.remove('open'); };
 window.openOutlook = function(){
   const to   = encodeURIComponent(document.getElementById('m-to').value);
   const subj = encodeURIComponent(document.getElementById('m-subj').value);
   const body = encodeURIComponent(document.getElementById('m-body').value);
   window.location.href = `mailto:${to}?subject=${subj}&body=${body}`;
+};
+
+// ============================================================
+//  管理: 予約変更
+// ============================================================
+window.openEditModal = function(i) {
+  const r = reservations[i];
+  document.getElementById('edit-idx').value = i;
+  document.getElementById('edit-alert').innerHTML = '';
+  document.getElementById('edit-summary').innerHTML =
+    `<strong>${r.co}　${r.pos} ${r.nm} 様</strong><br>現在の予約：${fmtDate(r.date)} ${r.st}～${r.et}`;
+  document.getElementById('edit-date').value = r.date;
+  updateEditSlots(r.date, r.slotId);
+  document.getElementById('m-edit').classList.add('open');
+};
+
+function updateEditSlots(dateStr, currentSlotId) {
+  const sel = document.getElementById('edit-slot');
+  const slots = getSlotsFor(dateStr);
+  if (!slots.length) {
+    sel.innerHTML = '<option value="">この日に枠がありません</option>';
+    return;
+  }
+  sel.innerHTML = slots.map(s =>
+    `<option value="${s.id}" ${s.id === currentSlotId ? 'selected' : ''}>${s.st}～${s.et}（定員${s.cap || settings.slotCap || 1}名）</option>`
+  ).join('');
+}
+
+document.addEventListener('change', function(e) {
+  if (e.target.id === 'edit-date') {
+    updateEditSlots(e.target.value, '');
+  }
+});
+
+window.doEdit = async function() {
+  const i       = parseInt(document.getElementById('edit-idx').value);
+  const newDate = document.getElementById('edit-date').value;
+  const newSlotId = document.getElementById('edit-slot').value;
+  const alertEl = document.getElementById('edit-alert');
+  if (!newDate || !newSlotId) {
+    alertEl.innerHTML = '<div class="alert alert-danger">日付と時間枠を選択してください</div>'; return;
+  }
+  const r = reservations[i];
+  const newSlot = slotCfgs.find(s => s.id === newSlotId);
+  if (!newSlot) { alertEl.innerHTML = '<div class="alert alert-danger">枠情報が見つかりません</div>'; return; }
+  const cap = Number(newSlot.cap || settings.slotCap || 1);
+  const newCntRef = ref(db, `slotCounts/${newDate}_${newSlotId}`);
+  const oldCntRef = ref(db, `slotCounts/${r.date}_${r.slotId}`);
+  try {
+    // 新しい枠の空き確認（同じ枠への変更は除く）
+    if (!(newDate === r.date && newSlotId === r.slotId)) {
+      const result = await runTransaction(newCntRef, cur => {
+        const n = cur || 0;
+        if (n >= cap) return; // abort
+        return n + 1;
+      });
+      if (!result.committed) throw new Error('選択した枠は満席です。別の枠を選択してください。');
+      // 元の枠のカウントを1減らす
+      await runTransaction(oldCntRef, cur => Math.max(0, (cur || 0) - 1));
+    }
+    // Firebaseの予約データを更新
+    await update(ref(db, `reservations/${r._id}`), {
+      date: newDate, slotId: newSlotId, st: newSlot.st, et: newSlot.et
+    });
+    closeModal('m-edit');
+    toast('予約を変更しました', 'ok');
+    await loadReservations();
+  } catch(e) {
+    alertEl.innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
+  }
+};
+
+// ============================================================
+//  管理: 予約削除
+// ============================================================
+window.confirmDelete = function(i) {
+  const r = reservations[i];
+  document.getElementById('del-idx').value = i;
+  document.getElementById('del-summary').innerHTML =
+    `${r.co}　${r.pos} ${r.nm} 様<br>予約日時：${fmtDate(r.date)} ${r.st}～${r.et}<br>メール：${r.mail}`;
+  document.getElementById('m-delete').classList.add('open');
+};
+
+window.doDelete = async function() {
+  const i = parseInt(document.getElementById('del-idx').value);
+  const r = reservations[i];
+  try {
+    // Firebaseから削除
+    const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    await remove(ref(db, `reservations/${r._id}`));
+    // 枠カウントを1減らす
+    const cntRef = ref(db, `slotCounts/${r.date}_${r.slotId}`);
+    await runTransaction(cntRef, cur => Math.max(0, (cur || 0) - 1));
+    closeModal('m-delete');
+    toast('予約を削除しました', 'ok');
+    await loadReservations();
+  } catch(e) {
+    toast('削除に失敗しました', 'ng');
+  }
 };
 
 // ============================================================
@@ -1315,7 +1483,11 @@ function toast(msg,type){
 // ============================================================
 //  モーダル外クリックで閉じる
 // ============================================================
-document.getElementById('m-email').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeModal(); });
+['m-email','m-edit','m-delete'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal(id);
+  });
+});
 
 // ============================================================
 //  ルーティング（#admin で管理画面）
