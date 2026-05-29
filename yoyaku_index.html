@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オンライン予約</title>
+<style>
+:root {
+  --primary: #1a1a2e;
+  --accent: #F7EE27;
+  --accent-dark: #d4c800;
+  --bg: #f5f5f0;
+  --white: #ffffff;
+  --text: #1a1a2e;
+  --text-muted: #6b7280;
+  --border: #e2e2da;
+  --success: #166534;
+  --success-bg: #dcfce7;
+  --danger: #991b1b;
+  --danger-bg: #fee2e2;
+  --warning-bg: #fef9c3;
+  --warning: #854d0e;
+  --gray: #f0f0ea;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Hiragino Sans','Noto Sans JP',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  font-size:15px;
+  line-height:1.6;
+}
+
+/* ヘッダー */
+.site-header{
+  background:var(--primary);
+  padding:18px 24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;
+  top:0;
+  z-index:50;
+}
+.site-logo{font-size:18px;font-weight:800;color:var(--accent);letter-spacing:.08em;}
+.site-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
+
+/* ページ切替 */
+.page{display:none;}
+.page.active{display:block;}
+.container{max-width:660px;margin:0 auto;padding:32px 18px;}
+.container-wide{max-width:1000px;margin:0 auto;padding:28px 18px;}
+
+/* カード */
+.card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:28px 26px;
+  margin-bottom:20px;
+  box-shadow:var(--shadow);
+}
+.card-title{
+  font-size:17px;font-weight:800;
+  margin-bottom:22px;
+  padding-bottom:14px;
+  border-bottom:3px solid var(--accent);
+  display:flex;align-items:center;gap:9px;
+}
+
+/* フォーム */
+.form-group{margin-bottom:16px;}
+.form-group label{
+  display:block;font-size:12px;font-weight:700;
+  color:var(--text-muted);margin-bottom:5px;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.req{color:var(--danger);margin-left:2px;}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;padding:11px 13px;
+  border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);
+  font-size:15px;font-family:inherit;
+  background:var(--white);color:var(--text);
+  outline:none;transition:border-color .18s;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--primary);}
+.form-group input.err{border-color:var(--danger);}
+.ferr{font-size:12px;color:var(--danger);margin-top:4px;display:none;}
+.ferr.show{display:block;}
+
+/* ボタン */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:12px 22px;border-radius:var(--radius-sm);
+  font-size:15px;font-weight:700;cursor:pointer;border:none;
+  transition:all .18s;font-family:inherit;text-decoration:none;
+}
+.btn-primary{background:var(--primary);color:var(--accent);}
+.btn-primary:hover{background:#2d2d4a;}
+.btn-accent{background:var(--accent);color:var(--primary);}
+.btn-accent:hover{background:var(--accent-dark);}
+.btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border);}
+.btn-outline:hover{background:var(--gray);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-sm{padding:7px 13px;font-size:13px;}
+.btn-full{width:100%;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+
+/* バッジ */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:700;}
+.bdot{width:7px;height:7px;border-radius:50%;}
+.badge-success{background:var(--success-bg);color:var(--success);}
+.badge-success .bdot{background:var(--success);}
+.badge-warn{background:var(--warning-bg);color:var(--warning);}
+.badge-warn .bdot{background:#eab308;}
+.badge-danger{background:var(--danger-bg);color:var(--danger);}
+.badge-danger .bdot{background:var(--danger);}
+.badge-gray{background:var(--gray);color:var(--text-muted);}
+
+/* アラート */
+.alert{padding:12px 15px;border-radius:var(--radius-sm);font-size:14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:9px;}
+.alert-success{background:var(--success-bg);color:var(--success);border:1px solid #86efac;}
+.alert-danger{background:var(--danger-bg);color:var(--danger);border:1px solid #fca5a5;}
+.alert-info{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+
+/* ステップ */
+.steps{display:flex;align-items:center;margin-bottom:26px;}
+.step{display:flex;align-items:center;gap:7px;font-size:13px;}
+.snum{
+  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:12px;background:var(--border);color:var(--text-muted);flex-shrink:0;
+}
+.step.active .snum{background:var(--primary);color:var(--accent);}
+.step.done .snum{background:var(--success);color:#fff;}
+.slabel{font-weight:700;color:var(--text-muted);}
+.step.active .slabel{color:var(--text);}
+.sline{flex:1;height:1px;background:var(--border);margin:0 10px;}
+
+/* 閉鎖・開始前ページ */
+.info-box{text-align:center;padding:60px 20px;}
+.info-icon{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;font-size:34px;}
+.info-icon.gray{background:var(--gray);}
+.info-icon.yellow{background:var(--warning-bg);}
+.info-title{font-size:20px;font-weight:800;margin-bottom:10px;}
+.info-msg{color:var(--text-muted);font-size:14px;line-height:1.9;}
+
+/* カレンダー */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.cal-nav h3{font-size:18px;font-weight:800;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:14px;}
+.cal-head{text-align:center;font-size:11px;font-weight:800;color:var(--text-muted);padding:6px 0;text-transform:uppercase;letter-spacing:.04em;}
+.cal-head.sun{color:#dc2626;}
+.cal-head.sat{color:#2563eb;}
+.cal-day{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-sm);font-size:14px;font-weight:600;
+  cursor:default;border:1.5px solid transparent;transition:all .14s;position:relative;
+}
+.cal-day.empty,.cal-day.inactive{background:transparent;color:transparent;}
+.cal-day.disabled{background:var(--gray);color:var(--border);}
+.cal-day.avail{background:var(--white);border-color:var(--primary);color:var(--primary);cursor:pointer;font-weight:800;}
+.cal-day.avail:hover{background:var(--primary);color:var(--accent);}
+.cal-day.sel{background:var(--primary);color:var(--accent);border-color:var(--primary);}
+.cal-day.today::after{
+  content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
+  width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.5;
+}
+.cal-day.avail .slot-badge,.cal-day.sel .slot-badge{
+  position:absolute;top:2px;right:2px;
+  font-size:9px;background:var(--success);color:#fff;
+  border-radius:9px;padding:1px 4px;line-height:1.4;
+  font-weight:700;
+}
+.cal-day.sel .slot-badge{background:var(--accent);color:var(--primary);}
+
+/* 時間枠 */
+.slots-area{margin-top:20px;padding-top:18px;border-top:1px solid var(--border);}
+.slots-label{font-size:13px;font-weight:800;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;}
+.slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;}
+.slot-card{
+  padding:14px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  cursor:pointer;transition:all .14s;text-align:center;background:var(--white);
+}
+.slot-card:hover:not(.full){border-color:var(--primary);background:var(--gray);}
+.slot-card.picked{border-color:var(--primary);background:var(--primary);color:#fff;}
+.slot-card.full{background:var(--gray);color:var(--border);cursor:not-allowed;border-color:var(--border);}
+.slot-time{font-size:16px;font-weight:800;}
+.slot-stat{font-size:11px;margin-top:3px;color:var(--text-muted);}
+.slot-card.picked .slot-stat{color:rgba(255,255,255,.65);}
+.slot-card.full .slot-stat{color:var(--border);}
+
+/* 確認テーブル */
+.conf-tbl{width:100%;}
+.conf-tbl tr{border-bottom:1px solid var(--border);}
+.conf-tbl tr:last-child{border:none;}
+.conf-tbl td{padding:9px 0;}
+.conf-tbl td:first-child{font-size:12px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;width:34%;}
+.conf-tbl td:last-child{font-weight:600;}
+
+/* 完了 */
+.done-box{text-align:center;padding:50px 20px;}
+.done-icon{width:80px;height:80px;background:var(--success-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;}
+.done-icon svg{color:var(--success);}
+.done-detail{background:var(--gray);border-radius:var(--radius-sm);padding:16px 20px;text-align:left;margin:18px 0;font-size:14px;line-height:2.1;}
+
+/* 管理ログイン */
+.login-wrap{max-width:400px;margin:70px auto;}
+.admin-login-title{text-align:center;font-size:22px;font-weight:800;margin-bottom:8px;}
+.admin-login-sub{text-align:center;font-size:13px;color:var(--text-muted);margin-bottom:26px;}
+
+/* 管理ヘッダー */
+.admin-bar{
+  background:var(--primary);padding:14px 22px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.admin-nav{display:flex;gap:3px;}
+.anav-btn{
+  padding:7px 13px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;
+  cursor:pointer;color:rgba(255,255,255,.65);border:none;background:transparent;
+  transition:all .15s;font-family:inherit;
+}
+.anav-btn:hover,.anav-btn.on{background:rgba(255,255,255,.14);color:#fff;}
+.anav-btn.logout{color:#f87171;}
+
+/* 管理タブ */
+.atab{display:none;}
+.atab.on{display:block;}
+
+/* 設定グリッド */
+.set-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:640px){.set-grid{grid-template-columns:1fr;}}
+
+/* 枠エディタ */
+.slot-row{
+  display:flex;align-items:flex-end;gap:9px;flex-wrap:wrap;
+  padding:13px;background:var(--gray);border-radius:var(--radius-sm);margin-bottom:10px;
+}
+.slot-row input,.slot-row select{
+  padding:7px 9px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  font-size:13px;font-family:inherit;background:var(--white);color:var(--text);outline:none;
+}
+.slot-row input[type=time]{width:105px;}
+.slot-row .slot-label{font-size:11px;color:var(--text-muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em;}
+.btn-del{
+  width:32px;height:32px;border:none;background:var(--danger-bg);color:var(--danger);
+  border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;
+}
+
+/* 予約テーブル */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px;}
+thead tr{background:var(--primary);color:#fff;}
+thead th{padding:11px 13px;text-align:left;font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:hover{background:var(--gray);}
+tbody td{padding:11px 13px;vertical-align:middle;}
+.tname{font-weight:700;}
+.tco{font-size:12px;color:var(--text-muted);}
+
+/* メールタグ */
+.etag-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}
+.etag{display:inline-flex;align-items:center;gap:6px;background:var(--gray);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:13px;}
+.etag button{background:none;border:none;cursor:pointer;color:var(--text-muted);padding:0;font-size:15px;line-height:1;}
+.etag button:hover{color:var(--danger);}
+
+/* モーダル */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;padding:20px;}
+.modal-ov.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--radius);padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.22);}
+.modal-title{font-size:17px;font-weight:800;margin-bottom:18px;padding-bottom:12px;border-bottom:3px solid var(--accent);}
+.modal-act{display:flex;gap:9px;justify-content:flex-end;margin-top:22px;}
+
+/* トースト */
+.toast{
+  position:fixed;bottom:22px;right:22px;background:var(--primary);color:#fff;
+  padding:13px 18px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;
+  z-index:200;box-shadow:0 4px 14px rgba(0,0,0,.2);
+  transform:translateY(70px);opacity:0;transition:all .28s;max-width:300px;
+}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.ok{background:var(--success);}
+.toast.ng{background:var(--danger);}
+
+.divider{border:none;border-top:1px solid var(--border);margin:18px 0;}
+.row2{display:flex;gap:10px;justify-content:space-between;}
+
+@media(max-width:480px){
+  .container,.container-wide{padding:18px 13px;}
+  .card{padding:18px 15px;}
+  .btn{padding:12px 16px;font-size:14px;}
+  table{font-size:12px;}
+  thead th,tbody td{padding:9px 9px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header class="site-header">
+  <div>
+    <div class="site-logo" id="hd-logo">オンライン予約</div>
+    <div class="site-sub" id="hd-sub">説明会・商談 スケジュール予約</div>
+  </div>
+  <div id="hd-status"></div>
+</header>
+
+<!-- ===== 受付開始前 ===== -->
+<div id="pg-before" class="page">
+  <div class="container">
+    <div class="card">
+      <div class="info-box">
+        <div class="info-icon yellow">🕐</div>
+        <div class="info-title">現在、受付は開始しておりません</div>
+        <p class="info-msg">受付開始後に改めてアクセスしてください。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 受付終了 ===== -->
+<div id="pg-closed" class="page">
+  <div class="container">
+    <div class="card">
+      <div class="info-box">
+        <div class="info-icon gray">📋</div>
+        <div class="info-title" id="cl-title">受付を終了いたしました</div>
+        <p class="info-msg" id="cl-msg">多数お申込みいただき、申請可能数の上限に達したため、受付を終了させていただきました。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 情報入力 ===== -->
+<div id="pg-form" class="page">
+  <div class="container">
+    <div class="steps">
+      <div class="step active" id="s1"><div class="snum">1</div><div class="slabel">お客様情報</div></div>
+      <div class="sline"></div>
+      <div class="step" id="s2"><div class="snum">2</div><div class="slabel">日程選択</div></div>
+      <div class="sline"></div>
+      <div class="step" id="s3"><div class="snum">3</div><div class="slabel">確認・完了</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        お客様情報の入力
+      </div>
+      <div id="form-alert"></div>
+      <div class="form-group">
+        <label>会社名<span class="req">*</span></label>
+        <input type="text" id="f-co" placeholder="株式会社○○">
+        <div class="ferr" id="e-co">会社名を入力してください</div>
+      </div>
+      <div class="form-group">
+        <label>役職<span class="req">*</span></label>
+        <input type="text" id="f-pos" placeholder="営業部長">
+        <div class="ferr" id="e-pos">役職を入力してください</div>
+      </div>
+      <div class="form-group">
+        <label>氏名<span class="req">*</span></label>
+        <input type="text" id="f-name" placeholder="山田 太郎">
+        <div class="ferr" id="e-name">氏名を入力してください</div>
+      </div>
+      <div class="form-group">
+        <label>メールアドレス<span class="req">*</span></label>
+        <input type="email" id="f-mail" placeholder="example@company.com">
+        <div class="ferr" id="e-mail">有効なメールアドレスを入力してください</div>
+      </div>
+      <div class="form-group">
+        <label>電話番号<span class="req">*</span></label>
+        <input type="tel" id="f-tel" placeholder="090-0000-0000">
+        <div class="ferr" id="e-tel">電話番号を入力してください</div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="toCalendar()">
+        日程選択へ進む
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== カレンダー ===== -->
+<div id="pg-cal" class="page">
+  <div class="container">
+    <div class="steps">
+      <div class="step done"><div class="snum">✓</div><div class="slabel">お客様情報</div></div>
+      <div class="sline"></div>
+      <div class="step active"><div class="snum">2</div><div class="slabel">日程選択</div></div>
+      <div class="sline"></div>
+      <div class="step"><div class="snum">3</div><div class="slabel">確認・完了</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        日程を選択してください
+      </div>
+      <div class="cal-nav">
+        <button class="btn btn-outline btn-sm" onclick="chMonth(-1)">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+          前月
+        </button>
+        <h3 id="cal-label"></h3>
+        <button class="btn btn-outline btn-sm" onclick="chMonth(1)">
+          翌月
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="slots-area" id="slots-area" style="display:none">
+        <div class="slots-label" id="slots-date-lbl"></div>
+        <div class="slots-grid" id="slots-grid"></div>
+      </div>
+    </div>
+    <div class="row2">
+      <button class="btn btn-outline" onclick="showPage('pg-form')">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        戻る
+      </button>
+      <button class="btn btn-primary" id="btn-toconf" onclick="toConfirm()" disabled>
+        確認へ進む
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 確認 ===== -->
+<div id="pg-confirm" class="page">
+  <div class="container">
+    <div class="steps">
+      <div class="step done"><div class="snum">✓</div><div class="slabel">お客様情報</div></div>
+      <div class="sline"></div>
+      <div class="step done"><div class="snum">✓</div><div class="slabel">日程選択</div></div>
+      <div class="sline"></div>
+      <div class="step active"><div class="snum">3</div><div class="slabel">確認・完了</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        予約内容のご確認
+      </div>
+      <div id="conf-alert"></div>
+      <table class="conf-tbl">
+        <tr><td>会社名</td><td id="cv-co"></td></tr>
+        <tr><td>役職</td><td id="cv-pos"></td></tr>
+        <tr><td>氏名</td><td id="cv-name"></td></tr>
+        <tr><td>メール</td><td id="cv-mail"></td></tr>
+        <tr><td>電話番号</td><td id="cv-tel"></td></tr>
+        <tr><td>予約日時</td><td id="cv-dt" style="font-weight:800;color:var(--primary);font-size:16px;"></td></tr>
+      </table>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:14px;">上記内容でよろしければ「予約を確定する」をクリックしてください。</p>
+    </div>
+    <div class="row2">
+      <button class="btn btn-outline" onclick="showPage('pg-cal')">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        戻る
+      </button>
+      <button class="btn btn-accent" id="btn-submit" onclick="doSubmit()">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg>
+        予約を確定する
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 完了 ===== -->
+<div id="pg-done" class="page">
+  <div class="container">
+    <div class="card">
+      <div class="done-box">
+        <div class="done-icon">
+          <svg width="38" height="38" fill="none" stroke="currentColor" stroke-width="2.8" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">ご予約が確定しました</h2>
+        <p style="color:var(--text-muted);font-size:14px;">以下の内容で予約を承りました。</p>
+        <div class="done-detail" id="done-detail"></div>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.9;" id="done-zoom"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 管理ログイン ===== -->
+<div id="pg-admin-login" class="page">
+  <div class="container">
+    <div class="login-wrap">
+      <div class="card">
+        <p class="admin-login-title">管理画面</p>
+        <p class="admin-login-sub">パスワードを入力してください</p>
+        <div id="login-alert"></div>
+        <div class="form-group">
+          <label>パスワード</label>
+          <input type="password" id="inp-pw" placeholder="パスワード" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="doLogin()">ログイン</button>
+        <hr class="divider">
+        <button class="btn btn-outline btn-full btn-sm" onclick="initApp()">← 予約ページへ戻る</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 管理ダッシュボード ===== -->
+<div id="pg-admin" class="page">
+  <div class="admin-bar">
+    <div style="font-weight:800;color:var(--accent);font-size:16px;">管理画面</div>
+    <div class="admin-nav">
+      <button class="anav-btn on" onclick="switchTab('t-set',this)">設定</button>
+      <button class="anav-btn" onclick="switchTab('t-rsv',this)">予約一覧</button>
+      <button class="anav-btn" onclick="switchTab('t-pw',this)">PW変更</button>
+      <button class="anav-btn logout" onclick="doLogout()">ログアウト</button>
+    </div>
+  </div>
+
+  <div class="container-wide">
+
+    <!-- タブ: 設定 -->
+    <div class="atab on" id="t-set">
+      <div id="set-alert"></div>
+      <div class="set-grid">
+
+        <div class="card">
+          <div class="card-title" style="font-size:15px;">受付ステータス</div>
+          <div class="form-group">
+            <label>ステータス（手動）</label>
+            <select id="set-status">
+              <option value="before">受付開始前</option>
+              <option value="open">受付中</option>
+              <option value="closed">受付終了</option>
+            </select>
+          </div>
+          <div style="background:var(--gray);border-radius:var(--radius-sm);padding:11px;font-size:13px;color:var(--text-muted);line-height:1.7;">
+            <strong style="color:var(--text);">自動切替について</strong><br>
+            ・開始日時到達 → 受付中へ自動切替<br>
+            ・終了日時到達 → 受付終了へ自動切替<br>
+            ・最大予約数到達 → 受付終了へ自動切替
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="font-size:15px;">自動切替日時</div>
+          <div class="form-group">
+            <label>受付開始日時</label>
+            <input type="datetime-local" id="set-auto-open">
+          </div>
+          <div class="form-group">
+            <label>受付終了日時</label>
+            <input type="datetime-local" id="set-auto-close">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="font-size:15px;">カレンダー対象期間</div>
+          <div class="form-group">
+            <label>開始日</label>
+            <input type="date" id="set-pstart">
+          </div>
+          <div class="form-group">
+            <label>終了日</label>
+            <input type="date" id="set-pend">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="font-size:15px;">予約設定</div>
+          <div class="form-group">
+            <label>期間内の最大予約数（合計）</label>
+            <input type="number" id="set-max" min="1" value="10">
+          </div>
+          <div class="form-group">
+            <label>枠ごとのデフォルト定員</label>
+            <input type="number" id="set-cap" min="1" value="1">
+          </div>
+          <div class="form-group">
+            <label>Zoom URL</label>
+            <input type="url" id="set-zoom" placeholder="https://us02web.zoom.us/j/...">
+          </div>
+        </div>
+      </div>
+
+      <!-- 時間枠 -->
+      <div class="card">
+        <div class="card-title" style="font-size:15px;">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          時間枠の設定
+        </div>
+        <div id="slot-list"></div>
+        <button class="btn btn-outline btn-sm" onclick="addSlot()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          枠を追加
+        </button>
+      </div>
+
+      <!-- 通知メール -->
+      <div class="card">
+        <div class="card-title" style="font-size:15px;">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          通知先メールアドレス
+        </div>
+        <div class="form-group" style="display:flex;gap:9px;align-items:flex-end;">
+          <div style="flex:1"><label>追加するアドレス</label><input type="email" id="inp-nemail" placeholder="admin@company.com"></div>
+          <button class="btn btn-outline btn-sm" onclick="addEmail()" style="flex-shrink:0;margin-bottom:0;">追加</button>
+        </div>
+        <div class="etag-list" id="email-list"></div>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveSettings()" style="min-width:150px;">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        設定を保存
+      </button>
+    </div>
+
+    <!-- タブ: 予約一覧 -->
+    <div class="atab" id="t-rsv">
+      <div class="card">
+        <div class="card-title" style="font-size:15px;justify-content:space-between;">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            予約一覧
+          </span>
+          <button class="btn btn-outline btn-sm" onclick="dlCSV()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            CSVダウンロード
+          </button>
+        </div>
+        <div id="rsv-count" style="font-size:13px;color:var(--text-muted);margin-bottom:14px;"></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>予約日時</th><th>会社名 / 氏名</th><th>役職</th><th>メール / 電話</th><th>時間帯</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="rsv-tbody"></tbody>
+          </table>
+        </div>
+        <div id="rsv-empty" style="text-align:center;padding:40px;color:var(--text-muted);font-size:14px;display:none;">まだ予約はありません</div>
+      </div>
+    </div>
+
+    <!-- タブ: PW変更 -->
+    <div class="atab" id="t-pw">
+      <div class="card" style="max-width:420px;">
+        <div class="card-title" style="font-size:15px;">パスワード変更</div>
+        <div id="pw-alert"></div>
+        <div class="form-group"><label>現在のパスワード</label><input type="password" id="pw-cur"></div>
+        <div class="form-group"><label>新しいパスワード</label><input type="password" id="pw-new"></div>
+        <div class="form-group"><label>新しいパスワード（確認）</label><input type="password" id="pw-chk"></div>
+        <button class="btn btn-primary" onclick="changePw()">変更する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- メール作成モーダル -->
+<div class="modal-ov" id="m-email">
+  <div class="modal">
+    <div class="modal-title">通知メール作成（Outlook起動）</div>
+    <div class="form-group">
+      <label>宛先</label>
+      <input type="text" id="m-to" readonly style="background:var(--gray);">
+    </div>
+    <div class="form-group">
+      <label>件名</label>
+      <input type="text" id="m-subj">
+    </div>
+    <div class="form-group">
+      <label>本文</label>
+      <textarea id="m-body" rows="11" style="font-size:13px;line-height:1.75;"></textarea>
+    </div>
+    <div class="modal-act">
+      <button class="btn btn-outline" onclick="closeModal()">閉じる</button>
+      <button class="btn btn-primary" onclick="openOutlook()">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Outlookで開く
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- トースト -->
+<div class="toast" id="toast"></div>
+
+<!-- ========== Firebase SDK ========== -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set, push, update, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ============================================================
+//  Firebase 設定
+//  ★ Firebaseコンソールで取得した設定値をここに貼り付けてください
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyA98JWMfhaGLWJt777YKiyWkZqMtRjEaf4",
+  authDomain: "reservation-907e2.firebaseapp.com",
+  databaseURL: "https://reservation-907e2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "reservation-907e2",
+  storageBucket: "reservation-907e2.firebasestorage.app",
+  messagingSenderId: "908815238794",
+  appId: "1:908815238794:web:949be83a9dcfca1e740f73"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ============================================================
+//  グローバル状態
+// ============================================================
+let settings   = {};
+let slotCfgs   = [];
+let notifyEmails = [];
+let reservations = [];
+let formData   = {};
+let selDate    = null;
+let selSlotId  = null;
+let calY = new Date().getFullYear();
+let calM = new Date().getMonth();
+
+// ============================================================
+//  ページ制御
+// ============================================================
+window.showPage = function(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+};
+
+// ============================================================
+//  起動
+// ============================================================
+window.initApp = async function() {
+  try {
+    await loadSettings();
+    checkAutoStatus();
+    const st = settings.status || 'before';
+    setHeaderStatus(st);
+    if (st === 'before') {
+      showPage('pg-before');
+    } else if (st === 'open') {
+      showPage('pg-form');
+    } else {
+      document.getElementById('cl-msg').textContent =
+        settings.closedMsg || '多数お申込みいただき、申請可能数の上限に達したため、受付を終了させていただきました。';
+      showPage('pg-closed');
+    }
+  } catch(e) {
+    console.error(e);
+    showPage('pg-form');
+  }
+};
+
+// ============================================================
+//  設定読み込み
+// ============================================================
+async function loadSettings() {
+  const snap = await get(ref(db, 'settings'));
+  if (snap.exists()) {
+    const d = snap.val();
+    settings     = d;
+    slotCfgs     = Array.isArray(d.slotCfgs)     ? d.slotCfgs     : [];
+    notifyEmails = Array.isArray(d.notifyEmails)  ? d.notifyEmails : [];
+  } else {
+    settings = {
+      status: 'before', password: 'ulu1234',
+      maxTotal: 10, slotCap: 1, zoomUrl: '',
+      periodStart: '', periodEnd: '',
+      autoOpen: '', autoClose: '',
+      slotCfgs: [], notifyEmails: [],
+      closedMsg: '多数お申込みいただき、申請可能数の上限に達したため、受付を終了させていただきました。'
+    };
+    slotCfgs = []; notifyEmails = [];
+    await set(ref(db, 'settings'), settings);
+  }
+}
+
+// ============================================================
+//  自動ステータス切替
+// ============================================================
+function checkAutoStatus() {
+  const now = new Date();
+  if (settings.autoOpen && settings.status === 'before') {
+    if (now >= new Date(settings.autoOpen)) {
+      settings.status = 'open';
+      update(ref(db, 'settings'), { status: 'open' });
+    }
+  }
+  if (settings.autoClose && settings.status === 'open') {
+    if (now >= new Date(settings.autoClose)) {
+      settings.status = 'closed';
+      update(ref(db, 'settings'), { status: 'closed' });
+    }
+  }
+}
+
+async function checkMaxAndClose() {
+  const snap = await get(ref(db, 'reservations'));
+  const cnt = snap.exists() ? Object.keys(snap.val()).length : 0;
+  if (settings.maxTotal && cnt >= Number(settings.maxTotal) && settings.status === 'open') {
+    settings.status = 'closed';
+    await update(ref(db, 'settings'), { status: 'closed' });
+    return true;
+  }
+  return false;
+}
+
+function setHeaderStatus(st) {
+  const el = document.getElementById('hd-status');
+  const map = {
+    open:   '<span class="badge badge-success"><span class="bdot"></span>受付中</span>',
+    before: '<span class="badge badge-warn"><span class="bdot"></span>受付開始前</span>',
+    closed: '<span class="badge badge-danger"><span class="bdot"></span>受付終了</span>'
+  };
+  el.innerHTML = map[st] || '';
+}
+
+// ============================================================
+//  フォーム → カレンダー
+// ============================================================
+window.toCalendar = function() {
+  const co   = v('f-co'), pos = v('f-pos'), nm  = v('f-name');
+  const mail = v('f-mail'), tel = v('f-tel');
+  let ok = true;
+  const se = (fid, eid, bad) => { setErr(fid, eid, bad); if (bad) ok = false; };
+  se('f-co',   'e-co',   !co);
+  se('f-pos',  'e-pos',  !pos);
+  se('f-name', 'e-name', !nm);
+  se('f-mail', 'e-mail', !mail || !/\S+@\S+\.\S+/.test(mail));
+  se('f-tel',  'e-tel',  !tel);
+  if (!ok) return;
+  formData = { co, pos, nm, mail, tel };
+  selDate = null; selSlotId = null;
+  document.getElementById('btn-toconf').disabled = true;
+  calY = new Date().getFullYear(); calM = new Date().getMonth();
+  renderCal();
+  showPage('pg-cal');
+};
+
+// ============================================================
+//  カレンダー描画
+// ============================================================
+async function renderCal() {
+  const grid = document.getElementById('cal-grid');
+  document.getElementById('cal-label').textContent = `${calY}年${calM+1}月`;
+  const heads = ['日','月','火','水','木','金','土'];
+  let html = heads.map((d,i) =>
+    `<div class="cal-head ${i===0?'sun':i===6?'sat':''}">${d}</div>`).join('');
+
+  const first = new Date(calY, calM, 1).getDay();
+  const days  = new Date(calY, calM+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const ps    = settings.periodStart ? new Date(settings.periodStart) : null;
+  const pe    = settings.periodEnd   ? new Date(settings.periodEnd + 'T23:59:59') : null;
+
+  const booked = await getMonthBooked(calY, calM);
+
+  for (let i = 0; i < first; i++) html += '<div class="cal-day empty"></div>';
+  for (let d = 1; d <= days; d++) {
+    const dt    = new Date(calY, calM, d);
+    const dstr  = toDateStr(calY, calM+1, d);
+    const past  = dt < today;
+    const inRng = (!ps || dt >= ps) && (!pe || dt <= pe);
+    const slots = getSlotsFor(dstr);
+    const avail = slots.filter(s => {
+      const cap = Number(s.cap || settings.slotCap || 1);
+      return (booked[dstr]?.[s.id] || 0) < cap;
+    });
+    const isSel = selDate === dstr;
+    const isToday = dt.getTime() === today.getTime();
+    let cls = 'cal-day';
+    if (isToday) cls += ' today';
+    if (past || !inRng || !avail.length) {
+      cls += ' disabled';
+      html += `<div class="${cls}">${d}</div>`;
+    } else {
+      cls += isSel ? ' sel' : ' avail';
+      html += `<div class="${cls}" onclick="pickDate('${dstr}')">${d}<span class="slot-badge">${avail.length}</span></div>`;
+    }
+  }
+  grid.innerHTML = html;
+  document.getElementById('slots-area').style.display = 'none';
+}
+
+async function getMonthBooked(y, m) {
+  const res = {};
+  const snap = await get(ref(db, 'reservations'));
+  if (!snap.exists()) return res;
+  Object.values(snap.val()).forEach(r => {
+    if (!r.date) return;
+    const [ry, rm] = r.date.split('-').map(Number);
+    if (ry === y && rm === m+1) {
+      if (!res[r.date]) res[r.date] = {};
+      res[r.date][r.slotId] = (res[r.date][r.slotId] || 0) + 1;
+    }
+  });
+  return res;
+}
+
+function getSlotsFor(dstr) {
+  const dow = new Date(dstr).getDay();
+  return slotCfgs.filter(s => {
+    if (s.type === 'specific') return s.date === dstr;
+    if (s.type === 'weekly')   return (s.days || []).includes(dow);
+    return false;
+  });
+}
+
+window.chMonth = function(dir) {
+  calM += dir;
+  if (calM < 0)  { calM = 11; calY--; }
+  if (calM > 11) { calM = 0;  calY++; }
+  renderCal();
+};
+
+window.pickDate = async function(dstr) {
+  selDate = dstr; selSlotId = null;
+  document.getElementById('btn-toconf').disabled = true;
+  document.querySelectorAll('.cal-day').forEach(el => {
+    const d = el.getAttribute('onclick');
+    if (!d) return;
+    const m = d.match(/'([^']+)'/);
+    if (!m) return;
+    el.classList.remove('sel');
+    if (m[1] === dstr) {
+      el.classList.remove('avail');
+      el.classList.add('sel');
+    }
+  });
+  await renderSlots(dstr);
+};
+
+async function renderSlots(dstr) {
+  const area = document.getElementById('slots-area');
+  const grid = document.getElementById('slots-grid');
+  const [y,m,d] = dstr.split('-').map(Number);
+  document.getElementById('slots-date-lbl').textContent = `${y}年${m}月${d}日 の空き枠`;
+  const slots = getSlotsFor(dstr);
+  const snap = await get(ref(db, 'reservations'));
+  const booked = {};
+  if (snap.exists()) {
+    Object.values(snap.val()).forEach(r => {
+      if (r.date === dstr) booked[r.slotId] = (booked[r.slotId]||0)+1;
+    });
+  }
+  let html = '';
+  slots.forEach(s => {
+    const cap  = Number(s.cap || settings.slotCap || 1);
+    const cnt  = booked[s.id] || 0;
+    const full = cnt >= cap;
+    const picked = selSlotId === s.id;
+    let cls = full ? 'slot-card full' : (picked ? 'slot-card picked' : 'slot-card');
+    const stat = full ? '予約済' : `残り${cap - cnt}枠`;
+    const click = full ? '' : `onclick="pickSlot('${s.id}')"`;
+    html += `<div class="${cls}" id="sc-${s.id}" ${click}><div class="slot-time">${s.st}～${s.et}</div><div class="slot-stat">${stat}</div></div>`;
+  });
+  grid.innerHTML = html || '<p style="color:var(--text-muted);font-size:14px;">この日の枠はありません</p>';
+  area.style.display = 'block';
+}
+
+window.pickSlot = function(id) {
+  selSlotId = id;
+  document.querySelectorAll('.slot-card:not(.full)').forEach(el => el.classList.remove('picked'));
+  const el = document.getElementById(`sc-${id}`);
+  if (el) el.classList.add('picked');
+  document.getElementById('btn-toconf').disabled = false;
+};
+
+// ============================================================
+//  確認ページ
+// ============================================================
+window.toConfirm = function() {
+  if (!selDate || !selSlotId) return;
+  const slot = slotCfgs.find(s => s.id === selSlotId);
+  if (!slot) return;
+  const [y,m,d] = selDate.split('-').map(Number);
+  const dtStr = `${y}年${m}月${d}日 ${slot.st}～${slot.et}`;
+  document.getElementById('cv-co').textContent   = formData.co;
+  document.getElementById('cv-pos').textContent  = formData.pos;
+  document.getElementById('cv-name').textContent = formData.nm;
+  document.getElementById('cv-mail').textContent = formData.mail;
+  document.getElementById('cv-tel').textContent  = formData.tel;
+  document.getElementById('cv-dt').textContent   = dtStr;
+  document.getElementById('conf-alert').innerHTML = '';
+  showPage('pg-confirm');
+};
+
+// ============================================================
+//  予約確定
+// ============================================================
+window.doSubmit = async function() {
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = '処理中...';
+  try {
+    const slot = slotCfgs.find(s => s.id === selSlotId);
+    if (!slot) throw new Error('枠情報が見つかりません');
+    const cap = Number(slot.cap || settings.slotCap || 1);
+    const cntRef = ref(db, `slotCounts/${selDate}_${selSlotId}`);
+
+    // トランザクションで重複防止
+    const result = await runTransaction(cntRef, cur => {
+      const n = (cur || 0);
+      if (n >= cap) return; // abort
+      return n + 1;
+    });
+    if (!result.committed) throw new Error('この枠は満席になりました。別の枠をお選びください。');
+
+    await push(ref(db, 'reservations'), {
+      ...formData,
+      date: selDate, slotId: selSlotId,
+      st: slot.st, et: slot.et,
+      createdAt: new Date().toISOString()
+    });
+
+    // 最大予約数チェック→自動終了
+    await checkMaxAndClose();
+
+    // 完了ページ
+    const [y,m,d] = selDate.split('-').map(Number);
+    const dtStr = `${y}年${m}月${d}日 ${slot.st}～${slot.et}`;
+    document.getElementById('done-detail').innerHTML =
+      `<strong>${formData.co}</strong><br>${formData.pos}　${formData.nm} 様<br><br>` +
+      `<strong>予約日時：</strong>${dtStr}`;
+    const zEl = document.getElementById('done-zoom');
+    if (settings.zoomUrl) {
+      zEl.innerHTML = `当日はこちらよりご参加ください。<br><a href="${settings.zoomUrl}" style="color:var(--primary);font-weight:700;">${settings.zoomUrl}</a>`;
+    } else { zEl.textContent=''; }
+    showPage('pg-done');
+  } catch(e) {
+    document.getElementById('conf-alert').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg> 予約を確定する';
+  }
+};
+
+// ============================================================
+//  管理: ログイン / ログアウト
+// ============================================================
+window.doLogin = async function() {
+  const pw = document.getElementById('inp-pw').value;
+  await loadSettings();
+  if (pw === (settings.password || 'ulu1234')) {
+    loadAdminData();
+    showPage('pg-admin');
+  } else {
+    document.getElementById('login-alert').innerHTML = '<div class="alert alert-danger">パスワードが正しくありません</div>';
+  }
+};
+window.doLogout = function() {
+  document.getElementById('inp-pw').value = '';
+  showPage('pg-admin-login');
+};
+
+async function loadAdminData() {
+  await loadSettings();
+  populateForm();
+  await loadReservations();
+}
+
+function populateForm() {
+  document.getElementById('set-status').value    = settings.status || 'before';
+  document.getElementById('set-auto-open').value = settings.autoOpen || '';
+  document.getElementById('set-auto-close').value= settings.autoClose || '';
+  document.getElementById('set-pstart').value    = settings.periodStart || '';
+  document.getElementById('set-pend').value      = settings.periodEnd || '';
+  document.getElementById('set-max').value       = settings.maxTotal || 10;
+  document.getElementById('set-cap').value       = settings.slotCap || 1;
+  document.getElementById('set-zoom').value      = settings.zoomUrl || '';
+  renderEmailTags();
+  renderSlotList();
+}
+
+// ============================================================
+//  管理: 設定保存
+// ============================================================
+window.saveSettings = async function() {
+  const ns = {
+    status:      document.getElementById('set-status').value,
+    autoOpen:    document.getElementById('set-auto-open').value,
+    autoClose:   document.getElementById('set-auto-close').value,
+    periodStart: document.getElementById('set-pstart').value,
+    periodEnd:   document.getElementById('set-pend').value,
+    maxTotal:    parseInt(document.getElementById('set-max').value)||10,
+    slotCap:     parseInt(document.getElementById('set-cap').value)||1,
+    zoomUrl:     document.getElementById('set-zoom').value,
+    notifyEmails,
+    slotCfgs,
+    password:    settings.password || 'ulu1234',
+    closedMsg:   settings.closedMsg || '多数お申込みいただき、申請可能数の上限に達したため、受付を終了させていただきました。'
+  };
+  try {
+    await set(ref(db, 'settings'), ns);
+    settings = ns;
+    toast('設定を保存しました','ok');
+    document.getElementById('set-alert').innerHTML='';
+  } catch(e) {
+    document.getElementById('set-alert').innerHTML='<div class="alert alert-danger">保存に失敗しました</div>';
+  }
+};
+
+// ============================================================
+//  管理: メールタグ
+// ============================================================
+window.addEmail = function() {
+  const v = document.getElementById('inp-nemail').value.trim();
+  if (!v || !/\S+@\S+\.\S+/.test(v)) return;
+  if (!notifyEmails.includes(v)) notifyEmails.push(v);
+  document.getElementById('inp-nemail').value='';
+  renderEmailTags();
+};
+function renderEmailTags() {
+  document.getElementById('email-list').innerHTML = notifyEmails.map((e,i)=>
+    `<span class="etag">${e}<button onclick="rmEmail(${i})">×</button></span>`
+  ).join('');
+}
+window.rmEmail = function(i){ notifyEmails.splice(i,1); renderEmailTags(); };
+
+// ============================================================
+//  管理: 時間枠エディタ
+// ============================================================
+window.addSlot = function() {
+  slotCfgs.push({ id:'s'+Date.now(), type:'weekly', days:[1,2,3,4,5], st:'10:00', et:'11:00', cap:1 });
+  renderSlotList();
+};
+function renderSlotList() {
+  const el = document.getElementById('slot-list');
+  if (!slotCfgs.length) {
+    el.innerHTML='<p style="color:var(--text-muted);font-size:13px;margin-bottom:10px;">枠がありません。「枠を追加」から設定してください。</p>';
+    return;
+  }
+  const DOW = ['日','月','火','水','木','金','土'];
+  el.innerHTML = slotCfgs.map((s,i)=>`
+    <div class="slot-row">
+      <div>
+        <span class="slot-label">種別</span>
+        <select onchange="upSlotType(${i},this.value)">
+          <option value="weekly"   ${s.type==='weekly'  ?'selected':''}>曜日指定</option>
+          <option value="specific" ${s.type==='specific'?'selected':''}>日付指定</option>
+        </select>
+      </div>
+      <div id="sr-date-${i}">
+        ${s.type==='specific'
+          ? `<span class="slot-label">日付</span><input type="date" value="${s.date||''}" onchange="upSlotF(${i},'date',this.value)">`
+          : `<span class="slot-label">曜日（複数選択可）</span>
+             <select multiple size="3" style="min-width:70px;" onchange="upSlotDays(${i},this)">
+               ${DOW.map((d,di)=>`<option value="${di}" ${(s.days||[]).includes(di)?'selected':''}>${d}</option>`).join('')}
+             </select>`
+        }
+      </div>
+      <div>
+        <span class="slot-label">開始</span>
+        <input type="time" value="${s.st||'10:00'}" onchange="upSlotF(${i},'st',this.value)">
+      </div>
+      <div>
+        <span class="slot-label">終了</span>
+        <input type="time" value="${s.et||'11:00'}" onchange="upSlotF(${i},'et',this.value)">
+      </div>
+      <div>
+        <span class="slot-label">定員</span>
+        <input type="number" value="${s.cap||1}" min="1" style="width:58px;" onchange="upSlotF(${i},'cap',parseInt(this.value)||1)">
+      </div>
+      <button class="btn-del" onclick="rmSlot(${i})" title="削除">✕</button>
+    </div>
+  `).join('');
+}
+window.upSlotType = function(i,v){
+  slotCfgs[i].type=v;
+  if(v==='weekly'){ slotCfgs[i].days=[1,2,3,4,5]; delete slotCfgs[i].date; }
+  else { slotCfgs[i].date=''; delete slotCfgs[i].days; }
+  renderSlotList();
+};
+window.upSlotF    = function(i,k,v){ slotCfgs[i][k]=v; };
+window.upSlotDays = function(i,sel){ slotCfgs[i].days=Array.from(sel.selectedOptions).map(o=>parseInt(o.value)); };
+window.rmSlot     = function(i){ slotCfgs.splice(i,1); renderSlotList(); };
+
+// ============================================================
+//  管理: 予約一覧
+// ============================================================
+async function loadReservations() {
+  const snap = await get(ref(db,'reservations'));
+  reservations = [];
+  if (snap.exists()) {
+    Object.entries(snap.val()).forEach(([k,v])=> reservations.push({_id:k,...v}));
+    reservations.sort((a,b)=> b.createdAt?.localeCompare(a.createdAt||'')||0);
+  }
+  renderRsvTable();
+}
+function renderRsvTable() {
+  const tb   = document.getElementById('rsv-tbody');
+  const emp  = document.getElementById('rsv-empty');
+  const cnt  = document.getElementById('rsv-count');
+  cnt.textContent = `合計 ${reservations.length} 件`;
+  if (!reservations.length){ tb.innerHTML=''; emp.style.display='block'; return; }
+  emp.style.display='none';
+  tb.innerHTML = reservations.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${fmtDate(r.date)}</td>
+      <td><div class="tname">${r.nm}</div><div class="tco">${r.co}</div></td>
+      <td>${r.pos}</td>
+      <td><div>${r.mail}</div><div style="color:var(--text-muted)">${r.tel}</div></td>
+      <td>${r.st}～${r.et}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="openMailModal(${i})">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          メール作成
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ============================================================
+//  管理: CSV
+// ============================================================
+window.dlCSV = function() {
+  if (!reservations.length){ toast('予約データがありません','ng'); return; }
+  const hd = '番号,予約日,開始,終了,会社名,役職,氏名,メール,電話,登録日時';
+  const rows = reservations.map((r,i)=>
+    [i+1,r.date,r.st,r.et,r.co,r.pos,r.nm,r.mail,r.tel,r.createdAt]
+      .map(x=>`"${String(x||'').replace(/"/g,'""')}"`)
+      .join(',')
+  );
+  const blob = new Blob(['\uFEFF'+hd+'\n'+rows.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a = Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:`予約一覧_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`});
+  a.click(); URL.revokeObjectURL(a.href);
+};
+
+// ============================================================
+//  管理: パスワード変更
+// ============================================================
+window.changePw = async function() {
+  const cur = document.getElementById('pw-cur').value;
+  const nw  = document.getElementById('pw-new').value;
+  const chk = document.getElementById('pw-chk').value;
+  const al  = document.getElementById('pw-alert');
+  if (cur !== settings.password){ al.innerHTML='<div class="alert alert-danger">現在のパスワードが正しくありません</div>'; return; }
+  if (!nw || nw.length < 4){ al.innerHTML='<div class="alert alert-danger">4文字以上で入力してください</div>'; return; }
+  if (nw !== chk){ al.innerHTML='<div class="alert alert-danger">新しいパスワードが一致しません</div>'; return; }
+  try {
+    await update(ref(db,'settings'),{password:nw});
+    settings.password=nw;
+    al.innerHTML='<div class="alert alert-success">パスワードを変更しました</div>';
+    ['pw-cur','pw-new','pw-chk'].forEach(id=>document.getElementById(id).value='');
+  } catch(e){ al.innerHTML='<div class="alert alert-danger">変更に失敗しました</div>'; }
+};
+
+// ============================================================
+//  メール作成モーダル
+// ============================================================
+window.openMailModal = function(i) {
+  const r = reservations[i];
+  const [y,m,d] = r.date.split('-').map(Number);
+  const dtStr = `${y}年${m}月${d}日 ${r.st}～${r.et}`;
+  const zoom  = settings.zoomUrl || '（未設定）';
+  document.getElementById('m-to').value   = r.mail;
+  document.getElementById('m-subj').value = `【予約確認】${dtStr} のご予約について`;
+  document.getElementById('m-body').value =
+`${r.co}
+${r.pos}　${r.nm} 様
+
+この度はご予約いただきありがとうございます。
+以下の内容でご予約を承りました。
+
+━━━━━━━━━━━━━━━━━━━━━━
+■ 予約日時：${dtStr}
+■ Zoom URL：${zoom}
+━━━━━━━━━━━━━━━━━━━━━━
+
+当日はZoom URLよりご参加ください。
+
+ご不明な点やキャンセルのご連絡は、
+本メールへの返信にてご連絡ください。
+
+どうぞよろしくお願いいたします。`;
+  document.getElementById('m-email').classList.add('open');
+};
+window.closeModal  = function(){ document.getElementById('m-email').classList.remove('open'); };
+window.openOutlook = function(){
+  const to   = encodeURIComponent(document.getElementById('m-to').value);
+  const subj = encodeURIComponent(document.getElementById('m-subj').value);
+  const body = encodeURIComponent(document.getElementById('m-body').value);
+  window.location.href = `mailto:${to}?subject=${subj}&body=${body}`;
+};
+
+// ============================================================
+//  タブ切替
+// ============================================================
+window.switchTab = function(id, btn) {
+  document.querySelectorAll('.atab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.anav-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  btn.classList.add('on');
+  if (id==='t-rsv') loadReservations();
+};
+
+// ============================================================
+//  ユーティリティ
+// ============================================================
+function v(id){ return document.getElementById(id).value.trim(); }
+function setErr(fid, eid, bad){
+  document.getElementById(fid).classList.toggle('err',bad);
+  document.getElementById(eid).classList.toggle('show',bad);
+}
+function toDateStr(y,m,d){ return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function fmtDate(s){ if(!s)return''; const[y,m,d]=s.split('-'); return `${y}年${m}月${d}日`; }
+function toast(msg,type){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=`toast ${type||''} show`;
+  setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// ============================================================
+//  モーダル外クリックで閉じる
+// ============================================================
+document.getElementById('m-email').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeModal(); });
+
+// ============================================================
+//  ルーティング（#admin で管理画面）
+// ============================================================
+function route(){
+  if(window.location.hash==='#admin') showPage('pg-admin-login');
+  else initApp();
+}
+window.addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>
