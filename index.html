@@ -177,17 +177,21 @@ body{
 .info-title{font-family:var(--serif);font-size:25px;font-weight:600;margin-bottom:12px;letter-spacing:.03em;}
 .info-msg{color:var(--text-muted);font-size:14px;line-height:2;}
 
-/* カレンダー */
+/* カレンダー＋時間枠：2カラムレイアウト */
+.cal-layout{display:grid;grid-template-columns:1.5fr 1fr;gap:32px;align-items:start;}
+@media(max-width:880px){.cal-layout{grid-template-columns:1fr;gap:24px;}}
+
 .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
-.cal-nav h3{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:.05em;}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:16px;}
-.cal-head{text-align:center;font-size:11px;font-weight:700;color:var(--text-muted);padding:8px 0;letter-spacing:.12em;}
+.cal-nav h3{font-family:var(--serif);font-size:26px;font-weight:600;letter-spacing:.05em;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px;}
+.cal-head{text-align:center;font-size:12px;font-weight:700;color:var(--text-muted);padding:8px 0;letter-spacing:.12em;}
 .cal-head.sun{color:#c0392b;}
 .cal-head.sat{color:#2563eb;}
 .cal-day{
   aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-  border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:var(--serif);
+  border-radius:var(--radius-sm);font-weight:600;font-family:var(--serif);
   cursor:default;border:1.5px solid transparent;transition:all .15s;position:relative;
+  min-height:54px;
 }
 .cal-day.empty,.cal-day.inactive{background:transparent;color:transparent;}
 .cal-day.disabled{background:var(--gray);color:#d9d2c2;}
@@ -195,31 +199,43 @@ body{
 .cal-day.avail:hover{border-color:var(--primary);color:var(--primary);transform:translateY(-2px);box-shadow:0 6px 14px rgba(28,28,40,.1);}
 .cal-day.sel{background:var(--primary);color:var(--accent);border-color:var(--primary);box-shadow:0 6px 16px rgba(28,28,40,.22);}
 .cal-day.today::after{
-  content:'';position:absolute;bottom:5px;left:50%;transform:translateX(-50%);
-  width:4px;height:4px;border-radius:50%;background:var(--gold);
+  content:'';position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
+  width:5px;height:5px;border-radius:50%;background:var(--gold);
 }
-.cal-day.avail .slot-badge{
-  position:absolute;top:3px;right:3px;
-  font-size:9px;font-family:var(--sans);background:var(--accent);color:var(--primary);
-  border-radius:8px;padding:1px 5px;line-height:1.5;font-weight:700;
+.cal-num{
+  display:block;line-height:1;
+  font-size:clamp(18px,2.6vw,26px);
+}
+.slot-badge{
+  position:absolute;top:6px;right:6px;
+  font-size:11px;font-family:var(--sans);background:var(--accent);color:var(--primary);
+  border-radius:9px;padding:2px 7px;line-height:1.6;font-weight:700;
 }
 .cal-day.sel .slot-badge{background:var(--accent);color:var(--primary);}
-.cal-num{display:block;line-height:1;}
 
-/* 時間枠 */
-.slots-area{margin-top:24px;padding-top:20px;border-top:1px solid var(--border);}
-.slots-label{font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:14px;letter-spacing:.14em;text-transform:uppercase;}
-.slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;}
+/* 時間枠（右カラム） */
+.slots-panel{
+  background:var(--gray);border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px;min-height:340px;
+}
+.slots-label{font-size:13px;font-weight:700;color:var(--text-muted);margin-bottom:16px;letter-spacing:.14em;text-transform:uppercase;}
+.slots-placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:260px;color:var(--text-muted);font-size:14px;text-align:center;gap:12px;
+}
+.slots-placeholder svg{color:var(--border);}
+.slots-grid{display:grid;grid-template-columns:1fr;gap:10px;}
 .slot-card{
-  padding:16px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
-  cursor:pointer;transition:all .15s;text-align:center;background:var(--white);
+  padding:16px 18px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  cursor:pointer;transition:all .15s;background:var(--white);
+  display:flex;align-items:center;justify-content:space-between;
 }
 .slot-card:hover:not(.full){border-color:var(--primary);transform:translateY(-2px);box-shadow:var(--shadow-sm);}
 .slot-card.picked{border-color:var(--primary);background:var(--primary);color:var(--accent);box-shadow:0 6px 16px rgba(28,28,40,.22);}
-.slot-card.full{background:var(--gray);color:#cfc8b9;cursor:not-allowed;border-color:var(--border);}
-.slot-time{font-size:17px;font-weight:700;font-family:var(--serif);}
-.slot-stat{font-size:11px;margin-top:4px;color:var(--text-muted);letter-spacing:.05em;}
-.slot-card.picked .slot-stat{color:rgba(247,238,39,.75);}
+.slot-card.full{background:var(--white);color:#cfc8b9;cursor:not-allowed;border-color:var(--border);opacity:.6;}
+.slot-time{font-size:19px;font-weight:700;font-family:var(--serif);}
+.slot-stat{font-size:12px;color:var(--text-muted);letter-spacing:.05em;font-weight:700;}
+.slot-card.picked .slot-stat{color:rgba(247,238,39,.8);}
 .slot-card.full .slot-stat{color:#cfc8b9;}
 
 /* 確認テーブル */
@@ -424,7 +440,7 @@ tbody td{padding:13px 15px;vertical-align:middle;}
 
 <!-- ===== カレンダー ===== -->
 <div id="pg-cal" class="page">
-  <div class="container">
+  <div class="container-wide">
     <div class="steps">
       <div class="step done"><div class="snum">✓</div><div class="slabel">お客様情報</div></div>
       <div class="sline"></div>
@@ -437,21 +453,30 @@ tbody td{padding:13px 15px;vertical-align:middle;}
         <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         日程を選択してください
       </div>
-      <div class="cal-nav">
-        <button class="btn btn-outline btn-sm" onclick="chMonth(-1)">
-          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-          前月
-        </button>
-        <h3 id="cal-label"></h3>
-        <button class="btn btn-outline btn-sm" onclick="chMonth(1)">
-          翌月
-          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-        </button>
-      </div>
-      <div class="cal-grid" id="cal-grid"></div>
-      <div class="slots-area" id="slots-area" style="display:none">
-        <div class="slots-label" id="slots-date-lbl"></div>
-        <div class="slots-grid" id="slots-grid"></div>
+      <div class="cal-layout">
+        <div class="cal-panel">
+          <div class="cal-nav">
+            <button class="btn btn-outline btn-sm" onclick="chMonth(-1)">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+              前月
+            </button>
+            <h3 id="cal-label"></h3>
+            <button class="btn btn-outline btn-sm" onclick="chMonth(1)">
+              翌月
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+        <div class="slots-panel" id="slots-area">
+          <div class="slots-label" id="slots-date-lbl">時間帯を選択</div>
+          <div id="slots-content">
+            <div class="slots-placeholder">
+              <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span>カレンダーから日付を<br>選択してください</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="row2">
@@ -518,7 +543,24 @@ tbody td{padding:13px 15px;vertical-align:middle;}
         <p style="color:var(--text-muted);font-size:14px;">以下の内容で予約を承りました。</p>
         <div class="done-detail" id="done-detail"></div>
         <p style="font-size:13px;color:var(--text-muted);line-height:1.9;" id="done-zoom"></p>
+        <div id="done-actions" style="text-align:left;margin-top:8px;"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- キャンセル/取り直し確認モーダル -->
+<div class="modal-ov" id="m-cancel-retake">
+  <div class="modal">
+    <div class="modal-title">予約のキャンセル</div>
+    <p style="font-size:14px;line-height:1.9;margin-bottom:6px;">現在の予約を取り消します。取り消し後、続けて別の日時で予約を取り直すことができます。</p>
+    <p style="font-size:13px;color:var(--text-muted);">この操作は元に戻せません。よろしいですか？</p>
+    <div class="modal-act">
+      <button class="btn btn-outline" onclick="closeModal('m-cancel-retake')">やめる</button>
+      <button class="btn btn-danger" onclick="doCancelRetake()">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        キャンセルして取り直す
+      </button>
     </div>
   </div>
 </div>
@@ -775,7 +817,7 @@ tbody td{padding:13px 15px;vertical-align:middle;}
 <!-- ========== Firebase SDK ========== -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, set, push, update, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set, push, update, remove, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 // ============================================================
 //  Firebase 設定
@@ -805,6 +847,7 @@ const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzFzUMsXLwGu7a6j
 // GAS側 CONFIG.SHARED_SECRET と同じ値を設定してください（設定しない場合は空文字でOK）
 const GAS_SHARED_SECRET = "ulu2026secret";
 
+
 // ============================================================
 //  グローバル状態
 // ============================================================
@@ -817,6 +860,7 @@ let selDate    = null;
 let selSlotId  = null;
 let calY = new Date().getFullYear();
 let calM = new Date().getMonth();
+let lastReservation = null; // 直近に確定した予約（キャンセル/取り直し用）
 
 // ============================================================
 //  ページ制御
@@ -985,7 +1029,19 @@ async function renderCal() {
     }
   }
   grid.innerHTML = html;
-  document.getElementById('slots-area').style.display = 'none';
+  // 月を変更した際は、選択中の日付が表示月と一致しない場合プレースホルダーに戻す
+  if (!selDate || !selDate.startsWith(`${calY}-${String(calM+1).padStart(2,'0')}`)) {
+    resetSlotsPlaceholder();
+  }
+}
+
+function resetSlotsPlaceholder() {
+  document.getElementById('slots-date-lbl').textContent = '時間帯を選択';
+  document.getElementById('slots-content').innerHTML = `
+    <div class="slots-placeholder">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>カレンダーから日付を<br>選択してください</span>
+    </div>`;
 }
 
 async function getMonthBooked(y, m) {
@@ -1042,8 +1098,7 @@ window.pickDate = async function(dstr) {
 };
 
 async function renderSlots(dstr) {
-  const area = document.getElementById('slots-area');
-  const grid = document.getElementById('slots-grid');
+  const content = document.getElementById('slots-content');
   const [y,m,d] = dstr.split('-').map(Number);
   document.getElementById('slots-date-lbl').textContent = `${y}年${m}月${d}日 の空き枠`;
   const slots = getSlotsFor(dstr);
@@ -1054,7 +1109,7 @@ async function renderSlots(dstr) {
       if (r.date === dstr) booked[r.slotId] = (booked[r.slotId]||0)+1;
     });
   }
-  let html = '';
+  let html = '<div class="slots-grid">';
   slots.forEach(s => {
     const cap  = Number(s.cap || settings.slotCap || 1);
     const cnt  = booked[s.id] || 0;
@@ -1065,8 +1120,8 @@ async function renderSlots(dstr) {
     const click = full ? '' : `onclick="pickSlot('${s.id}')"`;
     html += `<div class="${cls}" id="sc-${s.id}" ${click}><div class="slot-time">${s.st}～${s.et}</div><div class="slot-stat">${stat}</div></div>`;
   });
-  grid.innerHTML = html || '<p style="color:var(--text-muted);font-size:14px;">この日の枠はありません</p>';
-  area.style.display = 'block';
+  html += '</div>';
+  content.innerHTML = slots.length ? html : '<p style="color:var(--text-muted);font-size:14px;">この日の枠はありません</p>';
 }
 
 window.pickSlot = function(id) {
@@ -1116,12 +1171,19 @@ window.doSubmit = async function() {
     });
     if (!result.committed) throw new Error('この枠は満席になりました。別の枠をお選びください。');
 
-    await push(ref(db, 'reservations'), {
+    const newRef = await push(ref(db, 'reservations'), {
       ...formData,
       date: selDate, slotId: selSlotId,
       st: slot.st, et: slot.et,
       createdAt: new Date().toISOString()
     });
+
+    // キャンセル/取り直し用に直近の予約情報を保持
+    lastReservation = {
+      id: newRef.key,
+      date: selDate, slotId: selSlotId,
+      st: slot.st, et: slot.et
+    };
 
     // 最大予約数チェック→自動終了
     await checkMaxAndClose();
@@ -1144,11 +1206,84 @@ window.doSubmit = async function() {
     if (settings.zoomUrl) {
       zEl.innerHTML = `当日はこちらよりご参加ください。<br><a href="${settings.zoomUrl}" style="color:var(--primary);font-weight:700;">${settings.zoomUrl}</a>`;
     } else { zEl.textContent=''; }
+    renderDoneActions();
     showPage('pg-done');
   } catch(e) {
     document.getElementById('conf-alert').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
     btn.disabled = false;
     btn.innerHTML = '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg> 予約を確定する';
+  }
+};
+
+// ============================================================
+//  予約のキャンセル／取り直し（予約日の3日前まで）
+//  ※「3日以上前」は、予約日と本日（00:00基準）の日数差が3日以上である
+//    場合を指します（例：本日6/15 → 6/18以降の予約が対象）。
+// ============================================================
+function isCancelEligible(dateStr) {
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const resDate = new Date(y, m-1, d);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diffDays = Math.round((resDate - today) / 86400000);
+  return diffDays >= 3;
+}
+
+function renderDoneActions() {
+  const el = document.getElementById('done-actions');
+  if (!lastReservation) { el.innerHTML = ''; return; }
+
+  if (isCancelEligible(lastReservation.date)) {
+    el.innerHTML = `
+      <hr class="divider">
+      <p style="font-size:13px;color:var(--text-muted);line-height:1.9;margin-bottom:14px;">
+        日時を変更したい場合は、いったん今回の予約を取り消して、改めてご希望の日時をお選びいただけます。
+      </p>
+      <button class="btn btn-outline btn-full" onclick="confirmCancelRetake()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        予約をキャンセルする／取り直す
+      </button>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:10px;text-align:center;">
+        ※この操作は予約日の3日前までご利用いただけます。
+      </p>`;
+  } else {
+    const emails = (notifyEmails && notifyEmails.length)
+      ? notifyEmails.map(e=>`<strong>${e}</strong>`).join(' ／ ')
+      : '担当者';
+    el.innerHTML = `
+      <hr class="divider">
+      <div class="alert alert-info">
+        予約日の3日前を過ぎているため、本画面からの変更・キャンセルは承れません。<br>
+        日時の変更やキャンセルをご希望の場合は、お手数ですが以下の連絡先までメールにてご連絡ください。<br>
+        ${emails}
+      </div>`;
+  }
+}
+
+window.confirmCancelRetake = function() {
+  document.getElementById('m-cancel-retake').classList.add('open');
+};
+
+window.doCancelRetake = async function() {
+  if (!lastReservation) { closeModal('m-cancel-retake'); return; }
+  try {
+    // 予約データを削除
+    await remove(ref(db, `reservations/${lastReservation.id}`));
+    // 枠カウントを1減らす
+    const cntRef = ref(db, `slotCounts/${lastReservation.date}_${lastReservation.slotId}`);
+    await runTransaction(cntRef, cur => Math.max(0, (cur || 0) - 1));
+
+    closeModal('m-cancel-retake');
+    lastReservation = null;
+    toast('予約を取り消しました。日程を選び直してください。', 'ok');
+
+    // 日程選択ページへ戻る（お客様情報は保持）
+    selDate = null; selSlotId = null;
+    document.getElementById('btn-toconf').disabled = true;
+    calY = new Date().getFullYear(); calM = new Date().getMonth();
+    await renderCal();
+    showPage('pg-cal');
+  } catch(e) {
+    toast('キャンセル処理に失敗しました', 'ng');
   }
 };
 
@@ -1496,7 +1631,6 @@ window.doDelete = async function() {
   const r = reservations[i];
   try {
     // Firebaseから削除
-    const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     await remove(ref(db, `reservations/${r._id}`));
     // 枠カウントを1減らす
     const cntRef = ref(db, `slotCounts/${r.date}_${r.slotId}`);
@@ -1560,7 +1694,7 @@ function toast(msg,type){
 // ============================================================
 //  モーダル外クリックで閉じる
 // ============================================================
-['m-email','m-edit','m-delete'].forEach(id => {
+['m-email','m-edit','m-delete','m-cancel-retake'].forEach(id => {
   document.getElementById(id).addEventListener('click', e => {
     if (e.target === e.currentTarget) closeModal(id);
   });
