@@ -4,299 +4,336 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>オンライン予約</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root {
-  --primary: #1a1a2e;
+  --primary: #1c1c28;
+  --primary-light: #32324a;
   --accent: #F7EE27;
-  --accent-dark: #d4c800;
-  --bg: #f5f5f0;
+  --accent-dark: #e3da00;
+  --gold: #c9a961;
+  --gold-soft: #f3e9d2;
+  --bg: #faf8f3;
   --white: #ffffff;
-  --text: #1a1a2e;
-  --text-muted: #6b7280;
-  --border: #e2e2da;
-  --success: #166534;
-  --success-bg: #dcfce7;
-  --danger: #991b1b;
-  --danger-bg: #fee2e2;
-  --warning-bg: #fef9c3;
-  --warning: #854d0e;
-  --gray: #f0f0ea;
-  --radius: 14px;
-  --radius-sm: 8px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  --text: #232330;
+  --text-muted: #98907f;
+  --border: #ece6d9;
+  --success: #2f6f52;
+  --success-bg: #e7f3ec;
+  --danger: #b3392f;
+  --danger-bg: #faebe9;
+  --warning-bg: #fbf1d9;
+  --warning: #966a1a;
+  --gray: #f5f1e9;
+  --radius: 18px;
+  --radius-sm: 10px;
+  --shadow: 0 2px 6px rgba(28,28,40,.04), 0 16px 40px rgba(28,28,40,.07);
+  --shadow-sm: 0 1px 3px rgba(28,28,40,.05);
+  --serif: 'Cormorant Garamond','Zen Kaku Gothic New',serif;
+  --sans: 'Zen Kaku Gothic New','Hiragino Sans',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
 body{
-  font-family:'Hiragino Sans','Noto Sans JP',sans-serif;
+  font-family:var(--sans);
   background:var(--bg);
+  background-image:
+    radial-gradient(circle at 100% 0%, rgba(247,238,39,.07) 0%, transparent 45%),
+    radial-gradient(circle at 0% 100%, rgba(28,28,40,.035) 0%, transparent 40%);
+  background-attachment:fixed;
   color:var(--text);
   min-height:100vh;
   font-size:15px;
-  line-height:1.6;
+  line-height:1.7;
+  letter-spacing:.01em;
 }
 
 /* ヘッダー */
 .site-header{
-  background:var(--primary);
-  padding:18px 24px;
+  background:linear-gradient(135deg,var(--primary) 0%,#26263a 100%);
+  padding:22px 28px;
   display:flex;
   align-items:center;
   justify-content:space-between;
   position:sticky;
   top:0;
   z-index:50;
+  border-bottom:2px solid var(--accent);
+  box-shadow:0 4px 20px rgba(0,0,0,.12);
 }
-.site-logo{font-size:18px;font-weight:800;color:var(--accent);letter-spacing:.08em;}
-.site-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
+.site-logo{font-family:var(--serif);font-size:23px;font-weight:700;color:var(--accent);letter-spacing:.14em;}
+.site-sub{font-family:var(--sans);font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;letter-spacing:.1em;}
 
 /* ページ切替 */
 .page{display:none;}
-.page.active{display:block;}
-.container{max-width:660px;margin:0 auto;padding:32px 18px;}
-.container-wide{max-width:1000px;margin:0 auto;padding:28px 18px;}
+.page.active{display:block;animation:fadeUp .45s cubic-bezier(.16,1,.3,1);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.container{max-width:680px;margin:0 auto;padding:40px 20px;}
+.container-wide{max-width:1060px;margin:0 auto;padding:32px 20px;}
 
 /* カード */
 .card{
   background:var(--white);
   border:1px solid var(--border);
   border-radius:var(--radius);
-  padding:28px 26px;
-  margin-bottom:20px;
+  padding:32px 30px;
+  margin-bottom:22px;
   box-shadow:var(--shadow);
+  position:relative;
 }
 .card-title{
-  font-size:17px;font-weight:800;
-  margin-bottom:22px;
-  padding-bottom:14px;
-  border-bottom:3px solid var(--accent);
-  display:flex;align-items:center;gap:9px;
+  font-size:18px;font-weight:700;
+  margin-bottom:24px;
+  padding-bottom:16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:11px;
+  letter-spacing:.03em;
 }
+.card-title svg{color:var(--gold);flex-shrink:0;}
 
 /* フォーム */
-.form-group{margin-bottom:16px;}
+.form-group{margin-bottom:18px;}
 .form-group label{
   display:block;font-size:12px;font-weight:700;
-  color:var(--text-muted);margin-bottom:5px;
-  text-transform:uppercase;letter-spacing:.06em;
+  color:var(--text-muted);margin-bottom:7px;
+  text-transform:uppercase;letter-spacing:.14em;
 }
-.req{color:var(--danger);margin-left:2px;}
+.req{color:var(--danger);margin-left:3px;}
 .form-group input,.form-group select,.form-group textarea{
-  width:100%;padding:11px 13px;
+  width:100%;padding:12px 15px;
   border:1.5px solid var(--border);
   border-radius:var(--radius-sm);
   font-size:15px;font-family:inherit;
-  background:var(--white);color:var(--text);
-  outline:none;transition:border-color .18s;
+  background:var(--bg);color:var(--text);
+  outline:none;transition:all .2s;
 }
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--primary);}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+  border-color:var(--primary);background:var(--white);
+  box-shadow:0 0 0 3px rgba(28,28,40,.06);
+}
 .form-group input.err{border-color:var(--danger);}
-.ferr{font-size:12px;color:var(--danger);margin-top:4px;display:none;}
+.ferr{font-size:12px;color:var(--danger);margin-top:5px;display:none;}
 .ferr.show{display:block;}
 
 /* ボタン */
 .btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  padding:12px 22px;border-radius:var(--radius-sm);
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 26px;border-radius:var(--radius-sm);
   font-size:15px;font-weight:700;cursor:pointer;border:none;
-  transition:all .18s;font-family:inherit;text-decoration:none;
+  transition:all .2s cubic-bezier(.4,0,.2,1);font-family:inherit;text-decoration:none;
+  letter-spacing:.03em;
 }
-.btn-primary{background:var(--primary);color:var(--accent);}
-.btn-primary:hover{background:#2d2d4a;}
-.btn-accent{background:var(--accent);color:var(--primary);}
-.btn-accent:hover{background:var(--accent-dark);}
-.btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border);}
-.btn-outline:hover{background:var(--gray);}
+.btn-primary{background:var(--primary);color:var(--accent);box-shadow:0 2px 10px rgba(28,28,40,.18);}
+.btn-primary:hover{background:var(--primary-light);transform:translateY(-1px);box-shadow:0 6px 16px rgba(28,28,40,.24);}
+.btn-accent{background:var(--accent);color:var(--primary);box-shadow:0 2px 10px rgba(247,238,39,.35);}
+.btn-accent:hover{background:var(--accent-dark);transform:translateY(-1px);box-shadow:0 6px 16px rgba(247,238,39,.45);}
+.btn-outline{background:var(--white);color:var(--text);border:1.5px solid var(--border);}
+.btn-outline:hover{background:var(--gray);border-color:#d8cfb8;}
 .btn-danger{background:var(--danger);color:#fff;}
-.btn-sm{padding:7px 13px;font-size:13px;}
+.btn-danger:hover{background:#992c24;}
+.btn-sm{padding:8px 15px;font-size:13px;}
 .btn-full{width:100%;}
-.btn:disabled{opacity:.45;cursor:not-allowed;}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
 
 /* バッジ */
-.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:700;}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:.06em;}
 .bdot{width:7px;height:7px;border-radius:50%;}
 .badge-success{background:var(--success-bg);color:var(--success);}
 .badge-success .bdot{background:var(--success);}
 .badge-warn{background:var(--warning-bg);color:var(--warning);}
-.badge-warn .bdot{background:#eab308;}
+.badge-warn .bdot{background:#d4a017;}
 .badge-danger{background:var(--danger-bg);color:var(--danger);}
 .badge-danger .bdot{background:var(--danger);}
 .badge-gray{background:var(--gray);color:var(--text-muted);}
 
 /* アラート */
-.alert{padding:12px 15px;border-radius:var(--radius-sm);font-size:14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:9px;}
-.alert-success{background:var(--success-bg);color:var(--success);border:1px solid #86efac;}
-.alert-danger{background:var(--danger-bg);color:var(--danger);border:1px solid #fca5a5;}
-.alert-info{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+.alert{padding:13px 16px;border-radius:var(--radius-sm);font-size:14px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px;border-left:3px solid;}
+.alert-success{background:var(--success-bg);color:var(--success);border-color:var(--success);}
+.alert-danger{background:var(--danger-bg);color:var(--danger);border-color:var(--danger);}
+.alert-info{background:#eef4fb;color:#2056a8;border-color:#2056a8;}
 
 /* ステップ */
-.steps{display:flex;align-items:center;margin-bottom:26px;}
-.step{display:flex;align-items:center;gap:7px;font-size:13px;}
+.steps{display:flex;align-items:center;margin-bottom:32px;}
+.step{display:flex;align-items:center;gap:9px;font-size:13px;}
 .snum{
-  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-weight:800;font-size:12px;background:var(--border);color:var(--text-muted);flex-shrink:0;
+  width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;font-family:var(--serif);
+  background:var(--white);border:1.5px solid var(--border);color:var(--text-muted);flex-shrink:0;
+  transition:all .25s;
 }
-.step.active .snum{background:var(--primary);color:var(--accent);}
-.step.done .snum{background:var(--success);color:#fff;}
-.slabel{font-weight:700;color:var(--text-muted);}
-.step.active .slabel{color:var(--text);}
-.sline{flex:1;height:1px;background:var(--border);margin:0 10px;}
+.step.active .snum{background:var(--primary);color:var(--accent);border-color:var(--primary);}
+.step.done .snum{background:var(--accent);color:var(--primary);border-color:var(--accent);}
+.slabel{font-weight:600;color:var(--text-muted);letter-spacing:.05em;}
+.step.active .slabel{color:var(--text);font-weight:700;}
+.sline{flex:1;height:1px;background:var(--border);margin:0 12px;}
 
 /* 閉鎖・開始前ページ */
-.info-box{text-align:center;padding:60px 20px;}
-.info-icon{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;font-size:34px;}
+.info-box{text-align:center;padding:64px 20px;}
+.info-icon{width:78px;height:78px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:32px;border:1.5px solid var(--border);}
 .info-icon.gray{background:var(--gray);}
-.info-icon.yellow{background:var(--warning-bg);}
-.info-title{font-size:20px;font-weight:800;margin-bottom:10px;}
-.info-msg{color:var(--text-muted);font-size:14px;line-height:1.9;}
+.info-icon.yellow{background:var(--warning-bg);border-color:#f3e3b8;}
+.info-title{font-family:var(--serif);font-size:25px;font-weight:600;margin-bottom:12px;letter-spacing:.03em;}
+.info-msg{color:var(--text-muted);font-size:14px;line-height:2;}
 
 /* カレンダー */
-.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-.cal-nav h3{font-size:18px;font-weight:800;}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:14px;}
-.cal-head{text-align:center;font-size:11px;font-weight:800;color:var(--text-muted);padding:6px 0;text-transform:uppercase;letter-spacing:.04em;}
-.cal-head.sun{color:#dc2626;}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.cal-nav h3{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:.05em;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:16px;}
+.cal-head{text-align:center;font-size:11px;font-weight:700;color:var(--text-muted);padding:8px 0;letter-spacing:.12em;}
+.cal-head.sun{color:#c0392b;}
 .cal-head.sat{color:#2563eb;}
 .cal-day{
   aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-  border-radius:var(--radius-sm);font-size:14px;font-weight:600;
-  cursor:default;border:1.5px solid transparent;transition:all .14s;position:relative;
+  border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:var(--serif);
+  cursor:default;border:1.5px solid transparent;transition:all .15s;position:relative;
 }
 .cal-day.empty,.cal-day.inactive{background:transparent;color:transparent;}
-.cal-day.disabled{background:var(--gray);color:var(--border);}
-.cal-day.avail{background:var(--white);border-color:var(--primary);color:var(--primary);cursor:pointer;font-weight:800;}
-.cal-day.avail:hover{background:var(--primary);color:var(--accent);}
-.cal-day.sel{background:var(--primary);color:var(--accent);border-color:var(--primary);}
+.cal-day.disabled{background:var(--gray);color:#d9d2c2;}
+.cal-day.avail{background:var(--white);border-color:var(--border);color:var(--text);cursor:pointer;font-weight:700;box-shadow:var(--shadow-sm);}
+.cal-day.avail:hover{border-color:var(--primary);color:var(--primary);transform:translateY(-2px);box-shadow:0 6px 14px rgba(28,28,40,.1);}
+.cal-day.sel{background:var(--primary);color:var(--accent);border-color:var(--primary);box-shadow:0 6px 16px rgba(28,28,40,.22);}
 .cal-day.today::after{
-  content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
-  width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.5;
+  content:'';position:absolute;bottom:5px;left:50%;transform:translateX(-50%);
+  width:4px;height:4px;border-radius:50%;background:var(--gold);
 }
-.cal-day.avail .slot-badge,.cal-day.sel .slot-badge{
-  position:absolute;top:2px;right:2px;
-  font-size:9px;background:var(--success);color:#fff;
-  border-radius:9px;padding:1px 4px;line-height:1.4;
-  font-weight:700;
+.cal-day.avail .slot-badge{
+  position:absolute;top:3px;right:3px;
+  font-size:9px;font-family:var(--sans);background:var(--accent);color:var(--primary);
+  border-radius:8px;padding:1px 5px;line-height:1.5;font-weight:700;
 }
 .cal-day.sel .slot-badge{background:var(--accent);color:var(--primary);}
 .cal-num{display:block;line-height:1;}
 
 /* 時間枠 */
-.slots-area{margin-top:20px;padding-top:18px;border-top:1px solid var(--border);}
-.slots-label{font-size:13px;font-weight:800;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;}
+.slots-area{margin-top:24px;padding-top:20px;border-top:1px solid var(--border);}
+.slots-label{font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:14px;letter-spacing:.14em;text-transform:uppercase;}
 .slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;}
 .slot-card{
-  padding:14px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
-  cursor:pointer;transition:all .14s;text-align:center;background:var(--white);
+  padding:16px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  cursor:pointer;transition:all .15s;text-align:center;background:var(--white);
 }
-.slot-card:hover:not(.full){border-color:var(--primary);background:var(--gray);}
-.slot-card.picked{border-color:var(--primary);background:var(--primary);color:#fff;}
-.slot-card.full{background:var(--gray);color:var(--border);cursor:not-allowed;border-color:var(--border);}
-.slot-time{font-size:16px;font-weight:800;}
-.slot-stat{font-size:11px;margin-top:3px;color:var(--text-muted);}
-.slot-card.picked .slot-stat{color:rgba(255,255,255,.65);}
-.slot-card.full .slot-stat{color:var(--border);}
+.slot-card:hover:not(.full){border-color:var(--primary);transform:translateY(-2px);box-shadow:var(--shadow-sm);}
+.slot-card.picked{border-color:var(--primary);background:var(--primary);color:var(--accent);box-shadow:0 6px 16px rgba(28,28,40,.22);}
+.slot-card.full{background:var(--gray);color:#cfc8b9;cursor:not-allowed;border-color:var(--border);}
+.slot-time{font-size:17px;font-weight:700;font-family:var(--serif);}
+.slot-stat{font-size:11px;margin-top:4px;color:var(--text-muted);letter-spacing:.05em;}
+.slot-card.picked .slot-stat{color:rgba(247,238,39,.75);}
+.slot-card.full .slot-stat{color:#cfc8b9;}
 
 /* 確認テーブル */
 .conf-tbl{width:100%;}
 .conf-tbl tr{border-bottom:1px solid var(--border);}
 .conf-tbl tr:last-child{border:none;}
-.conf-tbl td{padding:9px 0;}
-.conf-tbl td:first-child{font-size:12px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;width:34%;}
-.conf-tbl td:last-child{font-weight:600;}
+.conf-tbl td{padding:11px 0;}
+.conf-tbl td:first-child{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.14em;width:34%;}
+.conf-tbl td:last-child{font-weight:600;font-size:15px;}
 
 /* 完了 */
-.done-box{text-align:center;padding:50px 20px;}
-.done-icon{width:80px;height:80px;background:var(--success-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;}
+.done-box{text-align:center;padding:56px 20px;}
+.done-icon{width:84px;height:84px;background:var(--success-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;border:1.5px solid #cfe8da;}
 .done-icon svg{color:var(--success);}
-.done-detail{background:var(--gray);border-radius:var(--radius-sm);padding:16px 20px;text-align:left;margin:18px 0;font-size:14px;line-height:2.1;}
+.done-detail{background:var(--gray);border-radius:var(--radius-sm);padding:20px 24px;text-align:left;margin:20px 0;font-size:14px;line-height:2.2;border:1px solid var(--border);}
 
 /* 管理ログイン */
-.login-wrap{max-width:400px;margin:70px auto;}
-.admin-login-title{text-align:center;font-size:22px;font-weight:800;margin-bottom:8px;}
-.admin-login-sub{text-align:center;font-size:13px;color:var(--text-muted);margin-bottom:26px;}
+.login-wrap{max-width:420px;margin:80px auto;}
+.admin-login-title{font-family:var(--serif);text-align:center;font-size:27px;font-weight:600;margin-bottom:10px;letter-spacing:.05em;}
+.admin-login-sub{text-align:center;font-size:13px;color:var(--text-muted);margin-bottom:28px;letter-spacing:.05em;}
 
 /* 管理ヘッダー */
 .admin-bar{
-  background:var(--primary);padding:14px 22px;
+  background:linear-gradient(135deg,var(--primary) 0%,#26263a 100%);
+  padding:16px 26px;
   display:flex;align-items:center;justify-content:space-between;
+  border-bottom:2px solid var(--accent);
+  box-shadow:0 4px 20px rgba(0,0,0,.12);
 }
-.admin-nav{display:flex;gap:3px;}
+.admin-nav{display:flex;gap:4px;}
 .anav-btn{
-  padding:7px 13px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;
-  cursor:pointer;color:rgba(255,255,255,.65);border:none;background:transparent;
-  transition:all .15s;font-family:inherit;
+  padding:8px 15px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;
+  cursor:pointer;color:rgba(255,255,255,.6);border:none;background:transparent;
+  transition:all .15s;font-family:inherit;letter-spacing:.05em;
 }
-.anav-btn:hover,.anav-btn.on{background:rgba(255,255,255,.14);color:#fff;}
-.anav-btn.logout{color:#f87171;}
+.anav-btn:hover,.anav-btn.on{background:rgba(255,255,255,.12);color:var(--accent);}
+.anav-btn.logout{color:#f3a39c;}
+.anav-btn.logout:hover{color:#fff;background:rgba(243,82,82,.2);}
 
 /* 管理タブ */
 .atab{display:none;}
-.atab.on{display:block;}
+.atab.on{display:block;animation:fadeUp .35s cubic-bezier(.16,1,.3,1);}
 
 /* 設定グリッド */
-.set-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.set-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
 @media(max-width:640px){.set-grid{grid-template-columns:1fr;}}
 
 /* 枠エディタ */
 .slot-row{
-  display:flex;align-items:flex-end;gap:9px;flex-wrap:wrap;
-  padding:13px;background:var(--gray);border-radius:var(--radius-sm);margin-bottom:10px;
+  display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;
+  padding:15px;background:var(--gray);border-radius:var(--radius-sm);margin-bottom:10px;
+  border:1px solid var(--border);
 }
 .slot-row input,.slot-row select{
-  padding:7px 9px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
   font-size:13px;font-family:inherit;background:var(--white);color:var(--text);outline:none;
 }
-.slot-row input[type=time]{width:105px;}
-.slot-row .slot-label{font-size:11px;color:var(--text-muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em;}
+.slot-row input[type=time]{width:108px;font-family:var(--serif);}
+.slot-row .slot-label{font-size:11px;color:var(--text-muted);font-weight:700;display:block;margin-bottom:4px;letter-spacing:.1em;text-transform:uppercase;}
 .btn-del{
-  width:32px;height:32px;border:none;background:var(--danger-bg);color:var(--danger);
+  width:34px;height:34px;border:1px solid var(--danger-bg);background:var(--danger-bg);color:var(--danger);
   border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;
+  transition:all .15s;
 }
+.btn-del:hover{background:var(--danger);color:#fff;}
 
 /* 予約テーブル */
-.tbl-wrap{overflow-x:auto;}
-table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px;}
-thead tr{background:var(--primary);color:#fff;}
-thead th{padding:11px 13px;text-align:left;font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
-tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius-sm);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:740px;}
+thead tr{background:var(--primary);color:var(--accent);}
+thead th{padding:13px 15px;text-align:left;font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;}
+tbody tr{border-bottom:1px solid var(--border);transition:background .12s;}
+tbody tr:last-child{border-bottom:none;}
 tbody tr:hover{background:var(--gray);}
-tbody td{padding:11px 13px;vertical-align:middle;}
+tbody td{padding:13px 15px;vertical-align:middle;}
 .tname{font-weight:700;}
 .tco{font-size:12px;color:var(--text-muted);}
 
 /* メールタグ */
-.etag-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}
-.etag{display:inline-flex;align-items:center;gap:6px;background:var(--gray);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:13px;}
-.etag button{background:none;border:none;cursor:pointer;color:var(--text-muted);padding:0;font-size:15px;line-height:1;}
+.etag-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.etag{display:inline-flex;align-items:center;gap:7px;background:var(--gray);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:13px;}
+.etag button{background:none;border:none;cursor:pointer;color:var(--text-muted);padding:0;font-size:16px;line-height:1;}
 .etag button:hover{color:var(--danger);}
 
 /* モーダル */
-.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;padding:20px;}
-.modal-ov.open{display:flex;}
-.modal{background:var(--white);border-radius:var(--radius);padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.22);}
-.modal-title{font-size:17px;font-weight:800;margin-bottom:18px;padding-bottom:12px;border-bottom:3px solid var(--accent);}
-.modal-act{display:flex;gap:9px;justify-content:flex-end;margin-top:22px;}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(28,28,40,.55);z-index:100;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);}
+.modal-ov.open{display:flex;animation:fadeUp .25s cubic-bezier(.16,1,.3,1);}
+.modal{background:var(--white);border-radius:var(--radius);padding:32px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(28,28,40,.25);}
+.modal-title{font-family:var(--serif);font-size:21px;font-weight:600;margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--border);letter-spacing:.03em;}
+.modal-act{display:flex;gap:10px;justify-content:flex-end;margin-top:26px;}
 
 /* トースト */
 .toast{
-  position:fixed;bottom:22px;right:22px;background:var(--primary);color:#fff;
-  padding:13px 18px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;
-  z-index:200;box-shadow:0 4px 14px rgba(0,0,0,.2);
-  transform:translateY(70px);opacity:0;transition:all .28s;max-width:300px;
+  position:fixed;bottom:24px;right:24px;background:var(--primary);color:var(--accent);
+  padding:14px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;
+  z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.2);
+  transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);max-width:320px;
 }
 .toast.show{transform:translateY(0);opacity:1;}
-.toast.ok{background:var(--success);}
-.toast.ng{background:var(--danger);}
+.toast.ok{background:var(--success);color:#fff;}
+.toast.ng{background:var(--danger);color:#fff;}
 
-.divider{border:none;border-top:1px solid var(--border);margin:18px 0;}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0;}
 .row2{display:flex;gap:10px;justify-content:space-between;}
 
 @media(max-width:480px){
-  .container,.container-wide{padding:18px 13px;}
-  .card{padding:18px 15px;}
-  .btn{padding:12px 16px;font-size:14px;}
+  .container,.container-wide{padding:24px 14px;}
+  .card{padding:22px 18px;}
+  .btn{padding:12px 18px;font-size:14px;}
   table{font-size:12px;}
-  thead th,tbody td{padding:9px 9px;}
+  thead th,tbody td{padding:10px 10px;}
+  .cal-nav h3{font-size:18px;}
 }
+
 </style>
 </head>
 <body>
@@ -758,6 +795,17 @@ const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 
 // ============================================================
+//  Google Apps Script Web App URL
+//  ★ GASでデプロイしたWebアプリのURLをここに貼り付けてください
+//    （予約確定時にGoogleカレンダーへ予定を自動登録するために使用）
+//    未設定（空文字）の場合はカレンダー連携をスキップします
+// ============================================================
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzFzUMsXLwGu7a6j8w0IZY2F9Ktz2FwnwmArpmnKJrnSqC3KpESK79lxed2WnNkP-i0/exec";
+
+// GAS側 CONFIG.SHARED_SECRET と同じ値を設定してください（設定しない場合は空文字でOK）
+const GAS_SHARED_SECRET = "ulu2026secret";
+
+// ============================================================
 //  グローバル状態
 // ============================================================
 let settings   = {};
@@ -1077,6 +1125,14 @@ window.doSubmit = async function() {
 
     // 最大予約数チェック→自動終了
     await checkMaxAndClose();
+
+    // Googleカレンダーへの登録（GAS経由・失敗してもお客様側の予約処理は継続）
+    notifyGoogleCalendar({
+      company: formData.co, position: formData.pos, name: formData.nm,
+      email: formData.mail, phone: formData.tel,
+      date: selDate, startTime: slot.st, endTime: slot.et,
+      zoomUrl: settings.zoomUrl || ''
+    });
 
     // 完了ページ
     const [y,m,d] = selDate.split('-').map(Number);
@@ -1463,6 +1519,27 @@ window.switchTab = function(id, btn) {
   btn.classList.add('on');
   if (id==='t-rsv') loadReservations();
 };
+
+// ============================================================
+//  Googleカレンダー連携（Google Apps Script Web App経由）
+// ============================================================
+function notifyGoogleCalendar(data) {
+  if (!GAS_WEBAPP_URL) return; // 未設定の場合はスキップ
+  try {
+    // GAS Web Appはno-corsでのfetchが必要（レスポンスは読み取れないが登録は実行される）
+    fetch(GAS_WEBAPP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ ...data, secret: GAS_SHARED_SECRET })
+    }).catch(() => {
+      // 通信エラーが発生してもお客様側の予約処理は継続する
+      console.warn('Googleカレンダー連携の通信に失敗しました');
+    });
+  } catch(e) {
+    console.warn('Googleカレンダー連携でエラーが発生しました', e);
+  }
+}
 
 // ============================================================
 //  ユーティリティ
