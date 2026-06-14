@@ -682,11 +682,35 @@ tbody td{padding:13px 15px;vertical-align:middle;}
           <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           通知先メールアドレス
         </div>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.7;">
+          予約が入った際にこちら側で確認する社内向けのアドレスです（複数登録可・将来の通知機能用）。
+        </p>
         <div class="form-group" style="display:flex;gap:9px;align-items:flex-end;">
           <div style="flex:1"><label>追加するアドレス</label><input type="email" id="inp-nemail" placeholder="admin@company.com"></div>
           <button class="btn btn-outline btn-sm" onclick="addEmail()" style="flex-shrink:0;margin-bottom:0;">追加</button>
         </div>
         <div class="etag-list" id="email-list"></div>
+
+        <hr class="divider">
+
+        <div class="card-title" style="font-size:15px;">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          キャンセル・変更時のお客様向け連絡先
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.7;">
+          予約日の3日前を過ぎたお客様に案内する、変更・キャンセルの問い合わせ先です。<br>
+          上記の通知先一覧から選ぶか、共通の問い合わせ用アドレス（例：info@...）を直接指定できます。
+        </p>
+        <div class="form-group">
+          <label>連絡先アドレスの選択</label>
+          <select id="set-contact-select" onchange="onContactSelectChange()">
+            <option value="">未設定（案内文を表示しない）</option>
+          </select>
+        </div>
+        <div class="form-group" id="contact-custom-wrap" style="display:none;">
+          <label>連絡先メールアドレス（直接入力）</label>
+          <input type="email" id="set-contact-custom" placeholder="info@ulu-consultants.jp">
+        </div>
       </div>
 
       <button class="btn btn-primary" onclick="saveSettings()" style="min-width:150px;">
@@ -847,7 +871,6 @@ const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzFzUMsXLwGu7a6j
 // GAS側 CONFIG.SHARED_SECRET と同じ値を設定してください（設定しない場合は空文字でOK）
 const GAS_SHARED_SECRET = "ulu2026secret";
 
-
 // ============================================================
 //  グローバル状態
 // ============================================================
@@ -910,7 +933,7 @@ async function loadSettings() {
       maxTotal: 10, slotCap: 1, zoomUrl: '',
       periodStart: '', periodEnd: '',
       autoOpen: '', autoClose: '',
-      slotCfgs: [], notifyEmails: [],
+      slotCfgs: [], notifyEmails: [], contactEmail: '',
       closedMsg: '多数お申込みいただき、申請可能数の上限に達したため、受付を終了させていただきました。'
     };
     slotCfgs = []; notifyEmails = [];
@@ -1246,16 +1269,42 @@ function renderDoneActions() {
         ※この操作は予約日の3日前までご利用いただけます。
       </p>`;
   } else {
-    const emails = (notifyEmails && notifyEmails.length)
-      ? notifyEmails.map(e=>`<strong>${e}</strong>`).join(' ／ ')
-      : '担当者';
+    const [y,m,d] = lastReservation.date.split('-').map(Number);
+    const dtStr = `${y}年${m}月${d}日 ${lastReservation.st}～${lastReservation.et}`;
+    const contact = (settings.contactEmail || '').trim();
+
+    let contactBlock;
+    if (contact) {
+      const subject = encodeURIComponent(`【予約変更・キャンセルのご連絡】${formData.co} ${formData.nm}様`);
+      const body = encodeURIComponent(
+`${formData.co}
+${formData.pos}　${formData.nm} 様
+
+下記の予約について、変更・キャンセルのご連絡です。
+
+現在の予約日時：${dtStr}
+
+【ご希望内容】
+（変更後のご希望日時、またはキャンセルのご希望をご記入ください）
+`);
+      contactBlock = `
+        <a class="btn btn-outline btn-full" href="mailto:${contact}?subject=${subject}&body=${body}" style="margin-top:14px;">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          ${contact} 宛にメールを作成する
+        </a>`;
+    } else {
+      contactBlock = `<p style="font-size:13px;color:var(--text-muted);margin-top:10px;">お手数ですが、お申込み先の担当者までご連絡ください。</p>`;
+    }
+
     el.innerHTML = `
       <hr class="divider">
       <div class="alert alert-info">
-        予約日の3日前を過ぎているため、本画面からの変更・キャンセルは承れません。<br>
-        日時の変更やキャンセルをご希望の場合は、お手数ですが以下の連絡先までメールにてご連絡ください。<br>
-        ${emails}
-      </div>`;
+        <div style="width:100%;">
+          予約日の3日前を過ぎているため、本画面からの変更・キャンセルは承れません。<br>
+          日時の変更やキャンセルをご希望の場合は、お手数ですが下記より担当者へご連絡ください。
+        </div>
+      </div>
+      ${contactBlock}`;
   }
 }
 
@@ -1322,6 +1371,7 @@ function populateForm() {
   document.getElementById('set-zoom').value      = settings.zoomUrl || '';
   renderEmailTags();
   renderSlotList();
+  renderContactSelect();
 }
 
 // ============================================================
@@ -1338,6 +1388,7 @@ window.saveSettings = async function() {
     slotCap:     parseInt(document.getElementById('set-cap').value)||1,
     zoomUrl:     document.getElementById('set-zoom').value,
     notifyEmails,
+    contactEmail: getContactEmailValue(),
     slotCfgs,
     password:    settings.password || 'ulu1234',
     closedMsg:   settings.closedMsg || '多数お申込みいただき、申請可能数の上限に達したため、受付を終了させていただきました。'
@@ -1361,13 +1412,55 @@ window.addEmail = function() {
   if (!notifyEmails.includes(v)) notifyEmails.push(v);
   document.getElementById('inp-nemail').value='';
   renderEmailTags();
+  renderContactSelect();
 };
 function renderEmailTags() {
   document.getElementById('email-list').innerHTML = notifyEmails.map((e,i)=>
     `<span class="etag">${e}<button onclick="rmEmail(${i})">×</button></span>`
   ).join('');
 }
-window.rmEmail = function(i){ notifyEmails.splice(i,1); renderEmailTags(); };
+window.rmEmail = function(i){ notifyEmails.splice(i,1); renderEmailTags(); renderContactSelect(); };
+
+// ============================================================
+//  管理: キャンセル・変更連絡先（お客様向け）の選択
+// ============================================================
+function renderContactSelect() {
+  const sel = document.getElementById('set-contact-select');
+  const current = settings.contactEmail || '';
+  const isCustom = current && !notifyEmails.includes(current);
+
+  let opts = '<option value="">未設定（案内文を表示しない）</option>';
+  notifyEmails.forEach(e => {
+    opts += `<option value="${e}" ${current===e ? 'selected':''}>${e}</option>`;
+  });
+  opts += `<option value="__custom__" ${isCustom ? 'selected':''}>その他のメールアドレスを指定</option>`;
+  sel.innerHTML = opts;
+
+  const customWrap = document.getElementById('contact-custom-wrap');
+  const customInp  = document.getElementById('set-contact-custom');
+  if (isCustom) {
+    customWrap.style.display = 'block';
+    customInp.value = current;
+  } else {
+    customWrap.style.display = 'none';
+    customInp.value = '';
+  }
+}
+
+window.onContactSelectChange = function() {
+  const sel = document.getElementById('set-contact-select');
+  document.getElementById('contact-custom-wrap').style.display =
+    (sel.value === '__custom__') ? 'block' : 'none';
+};
+
+// 保存時に最終的な連絡先メールアドレスを決定
+function getContactEmailValue() {
+  const sel = document.getElementById('set-contact-select').value;
+  if (sel === '__custom__') {
+    return document.getElementById('set-contact-custom').value.trim();
+  }
+  return sel; // 通知先一覧から選んだアドレス、または空文字（未設定）
+}
 
 // ============================================================
 //  管理: 時間枠エディタ
