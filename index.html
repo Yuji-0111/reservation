@@ -850,7 +850,7 @@ const db  = getDatabase(app);
 //    （予約確定時にGoogleカレンダーへ予定を自動登録するために使用）
 //    未設定（空文字）の場合はカレンダー連携をスキップします
 // ============================================================
-const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxicpHK3YTNj3lD4OsvRLjMiq9bUOuLKOgZeTSAKs3tzUTRWeb-ZXUiv0mabrrlq7j6/exec";
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxAI_WQl9RfRbdvzpH-qxtwpv9whUUr9wrPbQ3sJGXCW8ziuG-42Rwvuj1pTOGBHj0/exec";
 
 // GAS側 CONFIG.SHARED_SECRET と同じ値を設定してください（設定しない場合は空文字でOK）
 const GAS_SHARED_SECRET = "ulu2026secret";
@@ -1195,13 +1195,16 @@ window.doSubmit = async function() {
 
     // Googleカレンダーへの登録（GAS経由・失敗してもお客様側の予約処理は継続）
     // reservationId（Firebaseの予約キー）を予定の詳細欄に埋め込んでおくと、
-    // 後から管理者が手動でカレンダーの予定を特定する際の手がかりになる
+    // 後から管理者が手動でカレンダーの予定を特定する際の手がかりになる。
+    // notifyEmails（管理画面で設定した通知先）はゲストとして予定に追加し、
+    // Googleカレンダー標準の招待メールで通知を受け取れるようにする。
     gcalCreate({
       reservationId: newRef.key,
       company: formData.co, position: formData.pos, name: formData.nm,
       email: formData.mail, phone: formData.tel,
       date: selDate, startTime: slot.st, endTime: slot.et,
-      zoomUrl: settings.zoomUrl || ''
+      zoomUrl: settings.zoomUrl || '',
+      notifyEmails: settings.notifyEmails || []
     });
 
     // 完了ページ
