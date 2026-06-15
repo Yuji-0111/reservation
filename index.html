@@ -543,24 +543,8 @@ tbody td{padding:13px 15px;vertical-align:middle;}
         <p style="color:var(--text-muted);font-size:14px;">以下の内容で予約を承りました。</p>
         <div class="done-detail" id="done-detail"></div>
         <p style="font-size:13px;color:var(--text-muted);line-height:1.9;" id="done-zoom"></p>
-        <div id="done-actions" style="text-align:left;margin-top:8px;"></div>
+        <div id="done-contact" style="text-align:left;margin-top:8px;"></div>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- キャンセル/取り直し確認モーダル -->
-<div class="modal-ov" id="m-cancel-retake">
-  <div class="modal">
-    <div class="modal-title">予約のキャンセル</div>
-    <p style="font-size:14px;line-height:1.9;margin-bottom:6px;">現在の予約を取り消します。取り消し後、続けて別の日時で予約を取り直すことができます。</p>
-    <p style="font-size:13px;color:var(--text-muted);">この操作は元に戻せません。よろしいですか？</p>
-    <div class="modal-act">
-      <button class="btn btn-outline" onclick="closeModal('m-cancel-retake')">やめる</button>
-      <button class="btn btn-danger" onclick="doCancelRetake()">
-        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-        キャンセルして取り直す
-      </button>
     </div>
   </div>
 </div>
@@ -698,7 +682,7 @@ tbody td{padding:13px 15px;vertical-align:middle;}
           キャンセル・変更時のお客様向け連絡先
         </div>
         <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.7;">
-          予約日の3日前を過ぎたお客様に案内する、変更・キャンセルの問い合わせ先です。<br>
+          予約完了画面に表示する、変更・キャンセル時の問い合わせ先です。<br>
           上記の通知先一覧から選ぶか、共通の問い合わせ用アドレス（例：info@...）を直接指定できます。
         </p>
         <div class="form-group">
@@ -866,11 +850,10 @@ const db  = getDatabase(app);
 //    （予約確定時にGoogleカレンダーへ予定を自動登録するために使用）
 //    未設定（空文字）の場合はカレンダー連携をスキップします
 // ============================================================
-const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyEc94udTvTUmS602aHwws5BOntGUMPOMB97krxFmzHNdFTIaFkdvfN_Hwu7ZrNVnRA/exec";
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxicpHK3YTNj3lD4OsvRLjMiq9bUOuLKOgZeTSAKs3tzUTRWeb-ZXUiv0mabrrlq7j6/exec";
 
 // GAS側 CONFIG.SHARED_SECRET と同じ値を設定してください（設定しない場合は空文字でOK）
 const GAS_SHARED_SECRET = "ulu2026secret";
-
 
 // ============================================================
 //  グローバル状態
@@ -884,7 +867,6 @@ let selDate    = null;
 let selSlotId  = null;
 let calY = new Date().getFullYear();
 let calM = new Date().getMonth();
-let lastReservation = null; // 直近に確定した予約（キャンセル/取り直し用）
 
 // ============================================================
 //  ページ制御
@@ -1208,19 +1190,12 @@ window.doSubmit = async function() {
       createdAt: new Date().toISOString()
     });
 
-    // キャンセル/取り直し用に直近の予約情報を保持
-    lastReservation = {
-      id: newRef.key,
-      date: selDate, slotId: selSlotId,
-      st: slot.st, et: slot.et
-    };
-
     // 最大予約数チェック→自動終了
     await checkMaxAndClose();
 
     // Googleカレンダーへの登録（GAS経由・失敗してもお客様側の予約処理は継続）
-    // reservationId（Firebaseの予約キー）を予定の詳細欄に埋め込み、
-    // 後の変更・削除・キャンセル取り直しではこのIDで予定を検索する
+    // reservationId（Firebaseの予約キー）を予定の詳細欄に埋め込んでおくと、
+    // 後から管理者が手動でカレンダーの予定を特定する際の手がかりになる
     gcalCreate({
       reservationId: newRef.key,
       company: formData.co, position: formData.pos, name: formData.nm,
@@ -1239,7 +1214,7 @@ window.doSubmit = async function() {
     if (settings.zoomUrl) {
       zEl.innerHTML = `当日はこちらよりご参加ください。<br><a href="${settings.zoomUrl}" style="color:var(--primary);font-weight:700;">${settings.zoomUrl}</a>`;
     } else { zEl.textContent=''; }
-    renderDoneActions();
+    renderDoneContact(dtStr);
     showPage('pg-done');
   } catch(e) {
     document.getElementById('conf-alert').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
@@ -1249,44 +1224,18 @@ window.doSubmit = async function() {
 };
 
 // ============================================================
-//  予約のキャンセル／取り直し（予約日の3日前まで）
-//  ※「3日以上前」は、予約日と本日（00:00基準）の日数差が3日以上である
-//    場合を指します（例：本日6/15 → 6/18以降の予約が対象）。
+//  完了画面：変更・キャンセル時の連絡先案内（常時表示）
+//  ※ システム上での変更・キャンセル機能は提供せず、
+//    すべて管理画面で設定した連絡先メールへの連絡で対応する。
 // ============================================================
-function isCancelEligible(dateStr) {
-  const [y,m,d] = dateStr.split('-').map(Number);
-  const resDate = new Date(y, m-1, d);
-  const today = new Date(); today.setHours(0,0,0,0);
-  const diffDays = Math.round((resDate - today) / 86400000);
-  return diffDays >= 3;
-}
+function renderDoneContact(dtStr) {
+  const el = document.getElementById('done-contact');
+  const contact = (settings.contactEmail || '').trim();
 
-function renderDoneActions() {
-  const el = document.getElementById('done-actions');
-  if (!lastReservation) { el.innerHTML = ''; return; }
-
-  if (isCancelEligible(lastReservation.date)) {
-    el.innerHTML = `
-      <hr class="divider">
-      <p style="font-size:13px;color:var(--text-muted);line-height:1.9;margin-bottom:14px;">
-        日時を変更したい場合は、いったん今回の予約を取り消して、改めてご希望の日時をお選びいただけます。
-      </p>
-      <button class="btn btn-outline btn-full" onclick="confirmCancelRetake()">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-        予約をキャンセルする／取り直す
-      </button>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:10px;text-align:center;">
-        ※この操作は予約日の3日前までご利用いただけます。
-      </p>`;
-  } else {
-    const [y,m,d] = lastReservation.date.split('-').map(Number);
-    const dtStr = `${y}年${m}月${d}日 ${lastReservation.st}～${lastReservation.et}`;
-    const contact = (settings.contactEmail || '').trim();
-
-    let contactBlock;
-    if (contact) {
-      const subject = encodeURIComponent(`【予約変更・キャンセルのご連絡】${formData.co} ${formData.nm}様`);
-      const body = encodeURIComponent(
+  let contactBlock;
+  if (contact) {
+    const subject = encodeURIComponent(`【予約変更・キャンセルのご連絡】${formData.co} ${formData.nm}様`);
+    const body = encodeURIComponent(
 `${formData.co}
 ${formData.pos}　${formData.nm} 様
 
@@ -1297,56 +1246,24 @@ ${formData.pos}　${formData.nm} 様
 【ご希望内容】
 （変更後のご希望日時、またはキャンセルのご希望をご記入ください）
 `);
-      contactBlock = `
-        <a class="btn btn-outline btn-full" href="mailto:${contact}?subject=${subject}&body=${body}" style="margin-top:14px;">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          ${contact} 宛にメールを作成する
-        </a>`;
-    } else {
-      contactBlock = `<p style="font-size:13px;color:var(--text-muted);margin-top:10px;">お手数ですが、お申込み先の担当者までご連絡ください。</p>`;
-    }
+    contactBlock = `
+      <a class="btn btn-outline btn-full" href="mailto:${contact}?subject=${subject}&body=${body}" style="margin-top:14px;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        ${contact} 宛にメールを作成する
+      </a>`;
+  } else {
+    contactBlock = `<p style="font-size:13px;color:var(--text-muted);margin-top:10px;">お手数ですが、お申込み先の担当者までご連絡ください。</p>`;
+  }
 
-    el.innerHTML = `
-      <hr class="divider">
-      <div class="alert alert-info">
-        <div style="width:100%;">
-          予約日の3日前を過ぎているため、本画面からの変更・キャンセルは承れません。<br>
-          日時の変更やキャンセルをご希望の場合は、お手数ですが下記より担当者へご連絡ください。
-        </div>
+  el.innerHTML = `
+    <hr class="divider">
+    <div class="alert alert-info">
+      <div style="width:100%;">
+        日時の変更やキャンセルをご希望の場合は、お手数ですが下記より担当者へご連絡ください。
       </div>
-      ${contactBlock}`;
-  }
+    </div>
+    ${contactBlock}`;
 }
-
-window.confirmCancelRetake = function() {
-  document.getElementById('m-cancel-retake').classList.add('open');
-};
-
-window.doCancelRetake = async function() {
-  if (!lastReservation) { closeModal('m-cancel-retake'); return; }
-  try {
-    // 予約データを削除
-    await remove(ref(db, `reservations/${lastReservation.id}`));
-    // 枠カウントを1減らす
-    const cntRef = ref(db, `slotCounts/${lastReservation.date}_${lastReservation.slotId}`);
-    await runTransaction(cntRef, cur => Math.max(0, (cur || 0) - 1));
-    // Googleカレンダーの予定も削除（連携設定時のみ）
-    gcalDelete({ reservationId: lastReservation.id, date: lastReservation.date });
-
-    closeModal('m-cancel-retake');
-    lastReservation = null;
-    toast('予約を取り消しました。日程を選び直してください。', 'ok');
-
-    // 日程選択ページへ戻る（お客様情報は保持）
-    selDate = null; selSlotId = null;
-    document.getElementById('btn-toconf').disabled = true;
-    calY = new Date().getFullYear(); calM = new Date().getMonth();
-    await renderCal();
-    showPage('pg-cal');
-  } catch(e) {
-    toast('キャンセル処理に失敗しました', 'ng');
-  }
-};
 
 // ============================================================
 //  管理: ログイン / ログアウト
@@ -1713,16 +1630,9 @@ window.doEdit = async function() {
       date: newDate, slotId: newSlotId, st: newSlot.st, et: newSlot.et
     });
 
-    // Googleカレンダーの予定も日時変更（連携設定時のみ）
-    // oldDate: 変更前の日付（GAS側で予定を検索する際に使用）
-    gcalUpdate({
-      reservationId: r._id,
-      oldDate: r.date,
-      company: r.co, position: r.pos, name: r.nm,
-      email: r.mail, phone: r.tel,
-      date: newDate, startTime: newSlot.st, endTime: newSlot.et,
-      zoomUrl: settings.zoomUrl || ''
-    });
+    // ※ Googleカレンダー側の予定は自動更新されません。
+    //    必要な場合はカレンダー上で手動調整してください
+    //    （予定の詳細欄の「予約ID」で対象の予定を確認できます）。
 
     closeModal('m-edit');
     toast('予約を変更しました', 'ok');
@@ -1752,8 +1662,9 @@ window.doDelete = async function() {
     // 枠カウントを1減らす
     const cntRef = ref(db, `slotCounts/${r.date}_${r.slotId}`);
     await runTransaction(cntRef, cur => Math.max(0, (cur || 0) - 1));
-    // Googleカレンダーの予定も削除（連携設定時のみ）
-    gcalDelete({ reservationId: r._id, date: r.date });
+    // ※ Googleカレンダー側の予定は自動削除されません。
+    //    必要な場合はカレンダー上で手動削除してください
+    //    （予定の詳細欄の「予約ID」で対象の予定を確認できます）。
     closeModal('m-delete');
     toast('予約を削除しました', 'ok');
     await loadReservations();
@@ -1774,39 +1685,28 @@ window.switchTab = function(id, btn) {
 };
 
 // ============================================================
-//  Googleカレンダー連携（Google Apps Script Web App経由）
-//  ※ mode:'no-cors' で送信するため、GAS側からの応答は読み取りません
-//    （CORSの影響を受けず、確実に予約処理を継続できます）。
-//    予定の特定には、各予定の詳細欄に埋め込んだ「予約ID」を使用し、
-//    更新・削除時はGAS側でこのIDをもとに該当予定を検索します。
+//  Googleカレンダー連携（Google Apps Script Web App経由・作成のみ）
+//  ※ mode:'no-cors' で送信するため、GAS側からの応答は読み取りません。
+//    予約の変更・キャンセルはシステム上では行わず、お客様には
+//    完了画面の連絡先（contactEmail）へのメール連絡を案内します。
+//    予定の詳細欄には目印として「予約ID」（Firebaseの予約キー）を
+//    埋め込んでおり、管理者が手動で対象の予定を探す際の手がかりに
+//    なります。
 // ============================================================
-function gcalRequest(payload) {
+function gcalCreate(data) {
   if (!GAS_WEBAPP_URL) return; // 未設定の場合はスキップ
   try {
     fetch(GAS_WEBAPP_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' }, // プリフライト回避のためtext/plain
-      body: JSON.stringify({ ...payload, secret: GAS_SHARED_SECRET })
+      body: JSON.stringify({ action: 'create', ...data, secret: GAS_SHARED_SECRET })
     }).catch(() => {
       console.warn('Googleカレンダー連携の通信に失敗しました');
     });
   } catch(e) {
     console.warn('Googleカレンダー連携でエラーが発生しました', e);
   }
-}
-
-// 新規作成（reservationId: Firebaseの予約キーを予定の詳細欄に埋め込む）
-function gcalCreate(data) {
-  gcalRequest({ action: 'create', ...data });
-}
-// 更新（日時・内容変更）：oldDateは変更前の日付（検索用）
-function gcalUpdate(data) {
-  gcalRequest({ action: 'update', ...data });
-}
-// 削除：dateは予定が登録されている日付（検索用）
-function gcalDelete(data) {
-  gcalRequest({ action: 'delete', ...data });
 }
 
 // ============================================================
@@ -1828,7 +1728,7 @@ function toast(msg,type){
 // ============================================================
 //  モーダル外クリックで閉じる
 // ============================================================
-['m-email','m-edit','m-delete','m-cancel-retake'].forEach(id => {
+['m-email','m-edit','m-delete'].forEach(id => {
   document.getElementById(id).addEventListener('click', e => {
     if (e.target === e.currentTarget) closeModal(id);
   });
