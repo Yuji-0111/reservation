@@ -866,10 +866,11 @@ const db  = getDatabase(app);
 //    （予約確定時にGoogleカレンダーへ予定を自動登録するために使用）
 //    未設定（空文字）の場合はカレンダー連携をスキップします
 // ============================================================
-const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzKyU-ZsKqXJ8raZW6ichscIEPabmoXSqIbNmsy0UCbrbrYb9rSYkHOS5eV2xNmmeIv/exec";
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyEc94udTvTUmS602aHwws5BOntGUMPOMB97krxFmzHNdFTIaFkdvfN_Hwu7ZrNVnRA/exec";
 
 // GAS側 CONFIG.SHARED_SECRET と同じ値を設定してください（設定しない場合は空文字でOK）
 const GAS_SHARED_SECRET = "ulu2026secret";
+
 
 // ============================================================
 //  グローバル状態
@@ -1171,6 +1172,12 @@ window.toConfirm = function() {
   document.getElementById('cv-tel').textContent  = formData.tel;
   document.getElementById('cv-dt').textContent   = dtStr;
   document.getElementById('conf-alert').innerHTML = '';
+  // 確認画面を表示するたびに送信ボタンを初期状態へリセット
+  // （キャンセル/取り直し後の2回目以降の予約で「処理中...」のまま
+  //   固まって見える不具合の対策）
+  const submitBtn = document.getElementById('btn-submit');
+  submitBtn.disabled = false;
+  submitBtn.innerHTML = '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg> 予約を確定する';
   showPage('pg-confirm');
 };
 
@@ -1212,7 +1219,10 @@ window.doSubmit = async function() {
     await checkMaxAndClose();
 
     // Googleカレンダーへの登録（GAS経由・失敗してもお客様側の予約処理は継続）
-    notifyGoogleCalendar({
+    // reservationId（Firebaseの予約キー）を予定の詳細欄に埋め込み、
+    // 後の変更・削除・キャンセル取り直しではこのIDで予定を検索する
+    gcalCreate({
+      reservationId: newRef.key,
       company: formData.co, position: formData.pos, name: formData.nm,
       email: formData.mail, phone: formData.tel,
       date: selDate, startTime: slot.st, endTime: slot.et,
@@ -1320,6 +1330,8 @@ window.doCancelRetake = async function() {
     // 枠カウントを1減らす
     const cntRef = ref(db, `slotCounts/${lastReservation.date}_${lastReservation.slotId}`);
     await runTransaction(cntRef, cur => Math.max(0, (cur || 0) - 1));
+    // Googleカレンダーの予定も削除（連携設定時のみ）
+    gcalDelete({ reservationId: lastReservation.id, date: lastReservation.date });
 
     closeModal('m-cancel-retake');
     lastReservation = null;
@@ -1700,6 +1712,18 @@ window.doEdit = async function() {
     await update(ref(db, `reservations/${r._id}`), {
       date: newDate, slotId: newSlotId, st: newSlot.st, et: newSlot.et
     });
+
+    // Googleカレンダーの予定も日時変更（連携設定時のみ）
+    // oldDate: 変更前の日付（GAS側で予定を検索する際に使用）
+    gcalUpdate({
+      reservationId: r._id,
+      oldDate: r.date,
+      company: r.co, position: r.pos, name: r.nm,
+      email: r.mail, phone: r.tel,
+      date: newDate, startTime: newSlot.st, endTime: newSlot.et,
+      zoomUrl: settings.zoomUrl || ''
+    });
+
     closeModal('m-edit');
     toast('予約を変更しました', 'ok');
     await loadReservations();
@@ -1728,6 +1752,8 @@ window.doDelete = async function() {
     // 枠カウントを1減らす
     const cntRef = ref(db, `slotCounts/${r.date}_${r.slotId}`);
     await runTransaction(cntRef, cur => Math.max(0, (cur || 0) - 1));
+    // Googleカレンダーの予定も削除（連携設定時のみ）
+    gcalDelete({ reservationId: r._id, date: r.date });
     closeModal('m-delete');
     toast('予約を削除しました', 'ok');
     await loadReservations();
@@ -1749,23 +1775,38 @@ window.switchTab = function(id, btn) {
 
 // ============================================================
 //  Googleカレンダー連携（Google Apps Script Web App経由）
+//  ※ mode:'no-cors' で送信するため、GAS側からの応答は読み取りません
+//    （CORSの影響を受けず、確実に予約処理を継続できます）。
+//    予定の特定には、各予定の詳細欄に埋め込んだ「予約ID」を使用し、
+//    更新・削除時はGAS側でこのIDをもとに該当予定を検索します。
 // ============================================================
-function notifyGoogleCalendar(data) {
+function gcalRequest(payload) {
   if (!GAS_WEBAPP_URL) return; // 未設定の場合はスキップ
   try {
-    // GAS Web Appはno-corsでのfetchが必要（レスポンスは読み取れないが登録は実行される）
     fetch(GAS_WEBAPP_URL, {
       method: 'POST',
       mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ ...data, secret: GAS_SHARED_SECRET })
+      headers: { 'Content-Type': 'text/plain' }, // プリフライト回避のためtext/plain
+      body: JSON.stringify({ ...payload, secret: GAS_SHARED_SECRET })
     }).catch(() => {
-      // 通信エラーが発生してもお客様側の予約処理は継続する
       console.warn('Googleカレンダー連携の通信に失敗しました');
     });
   } catch(e) {
     console.warn('Googleカレンダー連携でエラーが発生しました', e);
   }
+}
+
+// 新規作成（reservationId: Firebaseの予約キーを予定の詳細欄に埋め込む）
+function gcalCreate(data) {
+  gcalRequest({ action: 'create', ...data });
+}
+// 更新（日時・内容変更）：oldDateは変更前の日付（検索用）
+function gcalUpdate(data) {
+  gcalRequest({ action: 'update', ...data });
+}
+// 削除：dateは予定が登録されている日付（検索用）
+function gcalDelete(data) {
+  gcalRequest({ action: 'delete', ...data });
 }
 
 // ============================================================
